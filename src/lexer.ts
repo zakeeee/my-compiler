@@ -27,18 +27,32 @@ export class Lexer {
         return createToken(TokenType.L_BRACE, source[this.pos++]);
       case '}':
         return createToken(TokenType.R_BRACE, source[this.pos++]);
-      case '<':
+      case '[':
+        return createToken(TokenType.L_BRACKET, source[this.pos++]);
+      case ']':
+        return createToken(TokenType.R_BRACKET, source[this.pos++]);
+      case '<': {
+        if (this.pos + 1 < source.length && source[this.pos + 1] === '=') {
+          this.pos += 2;
+          return createToken(TokenType.LESS_EQUAL_THAN, '!=');
+        }
         return createToken(TokenType.LESS_THAN, source[this.pos++]);
-      case '>':
-        return createToken(TokenType.GREAT_THAN, source[this.pos++]);
+      }
+      case '>': {
+        if (this.pos + 1 < source.length && source[this.pos + 1] === '=') {
+          this.pos += 2;
+          return createToken(TokenType.GREATER_EQUAL_THAN, '!=');
+        }
+        return createToken(TokenType.GREATER_THAN, source[this.pos++]);
+      }
       case '+':
         return this.nextNumberLiteral() || createToken(TokenType.PLUS, source[this.pos++]);
       case '-':
         return this.nextNumberLiteral() || createToken(TokenType.MINUS, source[this.pos++]);
       case '*':
-        return createToken(TokenType.MULTIPLY, source[this.pos++]);
+        return createToken(TokenType.ASTERISK, source[this.pos++]);
       case '/':
-        return createToken(TokenType.DIVIDE, source[this.pos++]);
+        return createToken(TokenType.SLASH, source[this.pos++]);
       case '=': {
         if (this.pos + 1 < source.length && source[this.pos + 1] === '=') {
           this.pos += 2;

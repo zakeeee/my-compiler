@@ -7,13 +7,15 @@ export enum TokenType {
   ASSIGN = '=',
   PLUS = '+',
   MINUS = '-',
-  MULTIPLY = '*',
-  DIVIDE = '/',
+  ASTERISK = '*',
+  SLASH = '/',
   EQUAL = '==',
   NOT = '!',
   NOT_EQUAL = '!=',
+  GREATER_THAN = '>',
+  GREATER_EQUAL_THAN = '>=',
   LESS_THAN = '<',
-  GREAT_THAN = '>',
+  LESS_EQUAL_THAN = '<=',
 
   COMMA = ',',
   SEMICOLON = ';',
@@ -24,6 +26,7 @@ export enum TokenType {
   L_BRACKET = '[',
   R_BRACKET = ']',
 
+  // Special Token Type
   EOF = 'EOF',
   ERROR = 'ERROR',
 }
