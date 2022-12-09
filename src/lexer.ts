@@ -107,7 +107,7 @@ export class Lexer {
 
   private nextNumberLiteral(): Token | null {
     const { source, pos: start } = this;
-    const re = /^[\+-]?\d+(\.\d+)?([eE][\+-]\d+)?/;
+    const re = /^[+-]?(0|[1-9]\d*)(\.\d+)?([eE][+-]?\d+)?/;
     const arr = re.exec(source.slice(start));
     if (!arr) {
       return null;

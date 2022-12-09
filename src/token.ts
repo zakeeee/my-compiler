@@ -55,7 +55,6 @@ const keywords = [
   'false',
   'func',
   'if',
-  'elif',
   'else',
   'for',
   'while',
