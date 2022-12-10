@@ -1,4 +1,21 @@
 import { createToken, isKeyword, getKeywordToken, Token, Tokens, TokenType } from './token';
+import { kleeneClosure, regExpAlternation, regExpConcatenation } from './utils';
+
+const identifierRE = /^[A-Za-z][A-Za-z0-9]*/;
+
+// Lexer 不处理数字的正负号，都认为是 Tokens.MINUS，丢给语法分析处理
+const numberLiteralRE = /^(0|[1-9]\d*)(\.\d+)?([eE][+-]?\d+)?/;
+
+const characterEscapeSequence = regExpAlternation(/["\\bfnrtv]/, /[^"\\bfnrtv0-9xu\r\n]/);
+const hexEscapeSequence = /x[0-9a-fA-F]{2}/;
+const unicodeEscapeSequence = /u[0-9a-fA-F]{4}/;
+const escapeSequence = regExpAlternation(
+  characterEscapeSequence,
+  hexEscapeSequence,
+  unicodeEscapeSequence
+);
+const stringCharacter = regExpAlternation(/[^"\\\r\n]/, regExpConcatenation(/\\/, escapeSequence));
+const stringLiteralRE = regExpConcatenation(/^"/, kleeneClosure(stringCharacter), /"/);
 
 export class Lexer {
   private pos: number = 0;
@@ -11,7 +28,7 @@ export class Lexer {
     const { source } = this;
 
     if (this.pos === source.length) {
-      return createToken(TokenType.EOF, '');
+      return Tokens.EOF;
     }
 
     switch (source[this.pos]) {
@@ -96,7 +113,10 @@ export class Lexer {
         return Tokens.NOT;
       }
       case '"': {
-        return this.nextStringLiteral();
+        const nextToken = this.nextStringLiteral()!;
+        if (nextToken) {
+          return nextToken;
+        }
       }
       default: {
         const nextToken = this.nextNumberLiteral() || this.nextKeywordOrIdentifier();
@@ -107,7 +127,7 @@ export class Lexer {
     }
 
     // 无法识别的 token
-    return createToken(TokenType.ERROR, '');
+    return Tokens.ERROR;
   }
 
   private skipWhitespace() {
@@ -117,28 +137,20 @@ export class Lexer {
     }
   }
 
-  private nextStringLiteral(): Token {
+  private nextStringLiteral(): Token | null {
     const { source, pos: start } = this;
-    let end = start + 1;
-    while (end < source.length) {
-      if (source[end] === '"' && source[end - 1] !== '\\') {
-        break;
-      }
-      end++;
-      if (end === source.length) {
-        throw new Error('missing quote');
-      }
+    const arr = new RegExp(stringLiteralRE).exec(source.slice(start));
+    if (!arr) {
+      return null;
     }
-    this.pos = end + 1;
-    const literal = source.slice(start, end + 1);
+    const literal = arr[0];
+    this.pos = start + literal.length;
     return createToken(TokenType.STRING_LITERAL, literal);
   }
 
   private nextNumberLiteral(): Token | null {
     const { source, pos: start } = this;
-    // Lexer 不处理数字的正负号，都认为是 Tokens.MINUS，丢给语法分析处理
-    const re = /^(0|[1-9]\d*)(\.\d+)?([eE][+-]?\d+)?/;
-    const arr = re.exec(source.slice(start));
+    const arr = new RegExp(numberLiteralRE).exec(source.slice(start));
     if (!arr) {
       return null;
     }
@@ -149,8 +161,7 @@ export class Lexer {
 
   private nextKeywordOrIdentifier(): Token | null {
     const { source, pos: start } = this;
-    const re = /^[A-Za-z][A-Za-z0-9]*/;
-    const arr = re.exec(source.slice(start));
+    const arr = new RegExp(identifierRE).exec(source.slice(start));
     if (!arr) {
       return null;
     }

@@ -118,7 +118,7 @@ describe('Lexer', () => {
   });
 
   it('should recognize string literals', () => {
-    const input = '"foo" "ba\\"r"';
+    const input = '"foo" "ba\\"r" "\\x00" "\\u0000"';
     const tokens: Token[] = [];
 
     const lexer = new Lexer(input);
@@ -132,7 +132,18 @@ describe('Lexer', () => {
     const expectedTokens: Token[] = [
       createToken(TokenType.STRING_LITERAL, '"foo"'),
       createToken(TokenType.STRING_LITERAL, '"ba\\"r"'),
+      createToken(TokenType.STRING_LITERAL, '"\\x00"'),
+      createToken(TokenType.STRING_LITERAL, '"\\u0000"'),
     ];
     expect(tokens).toEqual(expectedTokens);
+  });
+
+  describe('error tokens', () => {
+    it('should return error token when string literal across multi lines', () => {
+      const input = '"123\n123"';
+
+      const lexer = new Lexer(input);
+      expect(lexer.nextToken()).toEqual(Tokens.ERROR);
+    });
   });
 });
