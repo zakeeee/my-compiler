@@ -1,4 +1,4 @@
-import { createToken, isKeyword, getKeywordToken, Token, Tokens, TokenType } from './token';
+import { createToken, getKeywordToken, isKeyword, Token, Tokens, TokenType } from './token';
 import { kleeneClosure, regExpAlternation, regExpConcatenation } from './utils';
 
 const identifierRE = /^[A-Za-z][A-Za-z0-9]*/;
@@ -39,6 +39,18 @@ export class Lexer {
       case ';': {
         this.pos++;
         return Tokens.SEMICOLON;
+      }
+      case '.': {
+        this.pos++;
+        return Tokens.DOT;
+      }
+      case ':': {
+        this.pos++;
+        return Tokens.COLON;
+      }
+      case '?': {
+        this.pos++;
+        return Tokens.QUESTION_MARK;
       }
       case '(': {
         this.pos++;
@@ -96,10 +108,14 @@ export class Lexer {
         this.pos++;
         return Tokens.SLASH;
       }
+      case '%': {
+        this.pos++;
+        return Tokens.PERCENT;
+      }
       case '=': {
         if (this.pos + 1 < source.length && source[this.pos + 1] === '=') {
           this.pos += 2;
-          return Tokens.EQUAL;
+          return Tokens.EQUALS;
         }
         this.pos++;
         return Tokens.ASSIGN;
@@ -107,10 +123,34 @@ export class Lexer {
       case '!': {
         if (this.pos + 1 < source.length && source[this.pos + 1] === '=') {
           this.pos += 2;
-          return Tokens.NOT_EQUAL;
+          return Tokens.NOT_EQUALS;
         }
         this.pos++;
         return Tokens.NOT;
+      }
+      case '&': {
+        if (this.pos + 1 < source.length && source[this.pos + 1] === '&') {
+          this.pos += 2;
+          return Tokens.AND;
+        }
+        this.pos++;
+        return Tokens.BIT_AND;
+      }
+      case '|': {
+        if (this.pos + 1 < source.length && source[this.pos + 1] === '|') {
+          this.pos += 2;
+          return Tokens.OR;
+        }
+        this.pos++;
+        return Tokens.BIT_OR;
+      }
+      case '^': {
+        this.pos++;
+        return Tokens.BIT_XOR;
+      }
+      case '~': {
+        this.pos++;
+        return Tokens.BIT_NOT;
       }
       case '"': {
         const nextToken = this.nextStringLiteral()!;

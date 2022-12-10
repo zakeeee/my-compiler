@@ -4,7 +4,7 @@ import { createToken, Token, Tokens, TokenType } from './token';
 
 describe('Lexer', () => {
   it('should recognize operators and punctuations', () => {
-    const input = '= + - * / == ! != > >= < <= , ; ( ) { } [ ]';
+    const input = '= + - * / % == ! != > >= < <= , ; . : ? ( ) { } [ ] & | ^ ~ && ||';
     const tokens: Token[] = [];
 
     const lexer = new Lexer(input);
@@ -21,27 +21,37 @@ describe('Lexer', () => {
       Tokens.MINUS,
       Tokens.ASTERISK,
       Tokens.SLASH,
-      Tokens.EQUAL,
+      Tokens.PERCENT,
+      Tokens.EQUALS,
       Tokens.NOT,
-      Tokens.NOT_EQUAL,
+      Tokens.NOT_EQUALS,
       Tokens.GREATER_THAN,
       Tokens.GREATER_EQUAL_THAN,
       Tokens.LESS_THAN,
       Tokens.LESS_EQUAL_THAN,
       Tokens.COMMA,
       Tokens.SEMICOLON,
+      Tokens.DOT,
+      Tokens.COLON,
+      Tokens.QUESTION_MARK,
       Tokens.L_PAREN,
       Tokens.R_PAREN,
       Tokens.L_BRACE,
       Tokens.R_BRACE,
       Tokens.L_BRACKET,
       Tokens.R_BRACKET,
+      Tokens.BIT_AND,
+      Tokens.BIT_OR,
+      Tokens.BIT_XOR,
+      Tokens.BIT_NOT,
+      Tokens.AND,
+      Tokens.OR,
     ];
     expect(tokens).toEqual(expectedTokens);
   });
 
   it('should recognize keywords', () => {
-    const input = 'let true false func if else for while break continue return';
+    const input = 'let true false null func if else for while break continue return';
     const tokens: Token[] = [];
 
     const lexer = new Lexer(input);
@@ -56,6 +66,7 @@ describe('Lexer', () => {
       Tokens.LET,
       Tokens.TRUE,
       Tokens.FALSE,
+      Tokens.NULL,
       Tokens.FUNC,
       Tokens.IF,
       Tokens.ELSE,
