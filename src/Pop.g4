@@ -36,7 +36,6 @@ Identifier: [A-Za-z][A-Za-z0-9]*;
 StringLiteral: '"' StringCharacter* '"';
 NumberLiteral:
 	DecimalIntegerLiteral '.' DecimalDigit* ExponentPart?
-	| '.' DecimalDigit+ ExponentPart?
 	| DecimalIntegerLiteral ExponentPart?;
 
 // keywords
