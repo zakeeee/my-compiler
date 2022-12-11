@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { Lexer } from './lexer';
-import { Token } from './token';
+import { getTokenName, Token } from './token';
 
 describe('Lexer', () => {
   it('should recognize operators and punctuations', () => {
@@ -17,36 +17,36 @@ describe('Lexer', () => {
     }
 
     const expected = [
-      [{ line: 1, column: 1 }, Token.ASSIGN],
-      [{ line: 1, column: 3 }, Token.PLUS],
-      [{ line: 1, column: 5 }, Token.MINUS],
-      [{ line: 1, column: 7 }, Token.ASTERISK],
-      [{ line: 1, column: 9 }, Token.SLASH],
-      [{ line: 1, column: 11 }, Token.PERCENT],
-      [{ line: 1, column: 13 }, Token.EQUALS],
-      [{ line: 1, column: 16 }, Token.NOT],
-      [{ line: 1, column: 18 }, Token.NOT_EQUALS],
-      [{ line: 1, column: 21 }, Token.GREATER_THAN],
-      [{ line: 1, column: 23 }, Token.GREATER_EQUAL_THAN],
-      [{ line: 1, column: 26 }, Token.LESS_THAN],
-      [{ line: 1, column: 28 }, Token.LESS_EQUAL_THAN],
-      [{ line: 1, column: 31 }, Token.COMMA],
-      [{ line: 1, column: 33 }, Token.SEMICOLON],
-      [{ line: 1, column: 35 }, Token.DOT],
-      [{ line: 1, column: 37 }, Token.COLON],
-      [{ line: 1, column: 39 }, Token.QUESTION_MARK],
-      [{ line: 1, column: 41 }, Token.L_PAREN],
-      [{ line: 1, column: 43 }, Token.R_PAREN],
-      [{ line: 1, column: 45 }, Token.L_BRACE],
-      [{ line: 1, column: 47 }, Token.R_BRACE],
-      [{ line: 1, column: 49 }, Token.L_BRACKET],
-      [{ line: 1, column: 51 }, Token.R_BRACKET],
-      [{ line: 1, column: 53 }, Token.BIT_AND],
-      [{ line: 1, column: 55 }, Token.BIT_OR],
-      [{ line: 1, column: 57 }, Token.BIT_XOR],
-      [{ line: 1, column: 59 }, Token.BIT_NOT],
-      [{ line: 1, column: 61 }, Token.LOGIC_AND],
-      [{ line: 1, column: 64 }, Token.LOGIC_OR],
+      [{ line: 1, column: 1 }, Token.ASSIGN, '='],
+      [{ line: 1, column: 3 }, Token.PLUS, '+'],
+      [{ line: 1, column: 5 }, Token.MINUS, '-'],
+      [{ line: 1, column: 7 }, Token.ASTERISK, '*'],
+      [{ line: 1, column: 9 }, Token.SLASH, '/'],
+      [{ line: 1, column: 11 }, Token.PERCENT, '%'],
+      [{ line: 1, column: 13 }, Token.EQUALS, '=='],
+      [{ line: 1, column: 16 }, Token.NOT, '!'],
+      [{ line: 1, column: 18 }, Token.NOT_EQUALS, '!='],
+      [{ line: 1, column: 21 }, Token.GREATER_THAN, '>'],
+      [{ line: 1, column: 23 }, Token.GREATER_EQUAL_THAN, '>='],
+      [{ line: 1, column: 26 }, Token.LESS_THAN, '<'],
+      [{ line: 1, column: 28 }, Token.LESS_EQUAL_THAN, '<='],
+      [{ line: 1, column: 31 }, Token.COMMA, ','],
+      [{ line: 1, column: 33 }, Token.SEMICOLON, ';'],
+      [{ line: 1, column: 35 }, Token.DOT, '.'],
+      [{ line: 1, column: 37 }, Token.COLON, ':'],
+      [{ line: 1, column: 39 }, Token.QUESTION_MARK, '?'],
+      [{ line: 1, column: 41 }, Token.L_PAREN, '('],
+      [{ line: 1, column: 43 }, Token.R_PAREN, ')'],
+      [{ line: 1, column: 45 }, Token.L_BRACE, '{'],
+      [{ line: 1, column: 47 }, Token.R_BRACE, '}'],
+      [{ line: 1, column: 49 }, Token.L_BRACKET, '['],
+      [{ line: 1, column: 51 }, Token.R_BRACKET, ']'],
+      [{ line: 1, column: 53 }, Token.BIT_AND, '&'],
+      [{ line: 1, column: 55 }, Token.BIT_OR, '|'],
+      [{ line: 1, column: 57 }, Token.BIT_XOR, '^'],
+      [{ line: 1, column: 59 }, Token.BIT_NOT, '~'],
+      [{ line: 1, column: 61 }, Token.LOGIC_AND, '&&'],
+      [{ line: 1, column: 64 }, Token.LOGIC_OR, '||'],
     ];
     expect(items).toEqual(expected);
   });
@@ -104,7 +104,7 @@ describe('Lexer', () => {
   });
 
   it('should recognize number literals', () => {
-    const input = '0 -1 1 -3.14 3.14 3e-3 0.1e2 -1.2e+5';
+    const input = '0 -1 1 -3.14 3.14 3e-3 0.1e2 +1.2e+5';
     const items: unknown[] = [];
 
     const lexer = new Lexer(input);
@@ -118,15 +118,15 @@ describe('Lexer', () => {
 
     const expected = [
       [{ line: 1, column: 1 }, Token.NUMBER_LITERAL, '0'],
-      [{ line: 1, column: 3 }, Token.MINUS],
+      [{ line: 1, column: 3 }, Token.MINUS, '-'],
       [{ line: 1, column: 4 }, Token.NUMBER_LITERAL, '1'],
       [{ line: 1, column: 6 }, Token.NUMBER_LITERAL, '1'],
-      [{ line: 1, column: 8 }, Token.MINUS],
+      [{ line: 1, column: 8 }, Token.MINUS, '-'],
       [{ line: 1, column: 9 }, Token.NUMBER_LITERAL, '3.14'],
       [{ line: 1, column: 14 }, Token.NUMBER_LITERAL, '3.14'],
       [{ line: 1, column: 19 }, Token.NUMBER_LITERAL, '3e-3'],
       [{ line: 1, column: 24 }, Token.NUMBER_LITERAL, '0.1e2'],
-      [{ line: 1, column: 30 }, Token.MINUS],
+      [{ line: 1, column: 30 }, Token.PLUS, '+'],
       [{ line: 1, column: 31 }, Token.NUMBER_LITERAL, '1.2e+5'],
     ];
     expect(items).toEqual(expected);
@@ -159,7 +159,7 @@ describe('Lexer', () => {
       const input = '\n"123\n123"';
 
       const lexer = new Lexer(input);
-      expect(lexer.next()).toEqual([{ line: 2, column: 1 }, Token.ILLEGAL]);
+      expect(lexer.next()).toEqual([{ line: 2, column: 1 }, Token.ILLEGAL, '']);
     });
   });
 });
