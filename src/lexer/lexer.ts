@@ -1,4 +1,4 @@
-import { createToken, getKeywordToken, isKeyword, Token, Tokens, TokenType } from './token';
+import { getKeywordToken, isKeyword, Token } from './token';
 import { kleeneClosure, regExpAlternation, regExpConcatenation } from './utils';
 
 const identifierRE = /^[A-Za-z][A-Za-z0-9]*/;
@@ -17,199 +17,222 @@ const escapeSequence = regExpAlternation(
 const stringCharacter = regExpAlternation(/[^"\\\r\n]/, regExpConcatenation(/\\/, escapeSequence));
 const stringLiteralRE = regExpConcatenation(/^"/, kleeneClosure(stringCharacter), /"/);
 
+type Position = {
+  line: number;
+  column: number;
+};
+
+type Literal = string;
+
 export class Lexer {
-  private pos: number = 0;
+  private offset = 0;
+  private line = 1;
+  private lineOffset = 0; // 当前行起始 offset
 
   constructor(private source: string) {}
 
-  nextToken(): Token {
+  next(): readonly [Position, Token, Literal?] {
     this.skipWhitespace();
 
-    const { source } = this;
+    const { source, offset, line, lineOffset } = this;
+    const startPos = {
+      line,
+      column: offset - lineOffset + 1,
+    };
 
-    if (this.pos === source.length) {
-      return Tokens.EOF;
+    if (this.offset === source.length) {
+      return [startPos, Token.EOF];
     }
 
-    switch (source[this.pos]) {
+    const ch = source[this.offset];
+    switch (ch) {
       case ',': {
-        this.pos++;
-        return Tokens.COMMA;
+        this.offset++;
+        return [startPos, Token.COMMA];
       }
       case ';': {
-        this.pos++;
-        return Tokens.SEMICOLON;
+        this.offset++;
+        return [startPos, Token.SEMICOLON];
       }
       case '.': {
-        this.pos++;
-        return Tokens.DOT;
+        this.offset++;
+        return [startPos, Token.DOT];
       }
       case ':': {
-        this.pos++;
-        return Tokens.COLON;
+        this.offset++;
+        return [startPos, Token.COLON];
       }
       case '?': {
-        this.pos++;
-        return Tokens.QUESTION_MARK;
+        this.offset++;
+        return [startPos, Token.QUESTION_MARK];
       }
       case '(': {
-        this.pos++;
-        return Tokens.L_PAREN;
+        this.offset++;
+        return [startPos, Token.L_PAREN];
       }
       case ')': {
-        this.pos++;
-        return Tokens.R_PAREN;
+        this.offset++;
+        return [startPos, Token.R_PAREN];
       }
       case '{': {
-        this.pos++;
-        return Tokens.L_BRACE;
+        this.offset++;
+        return [startPos, Token.L_BRACE];
       }
       case '}': {
-        this.pos++;
-        return Tokens.R_BRACE;
+        this.offset++;
+        return [startPos, Token.R_BRACE];
       }
       case '[': {
-        this.pos++;
-        return Tokens.L_BRACKET;
+        this.offset++;
+        return [startPos, Token.L_BRACKET];
       }
       case ']': {
-        this.pos++;
-        return Tokens.R_BRACKET;
+        this.offset++;
+        return [startPos, Token.R_BRACKET];
       }
       case '<': {
-        if (this.pos + 1 < source.length && source[this.pos + 1] === '=') {
-          this.pos += 2;
-          return Tokens.LESS_EQUAL_THAN;
+        this.offset++;
+        if (this.offset < source.length && source[this.offset] === '=') {
+          this.offset++;
+          return [startPos, Token.LESS_EQUAL_THAN];
         }
-        this.pos++;
-        return Tokens.LESS_THAN;
+        return [startPos, Token.LESS_THAN];
       }
       case '>': {
-        if (this.pos + 1 < source.length && source[this.pos + 1] === '=') {
-          this.pos += 2;
-          return Tokens.GREATER_EQUAL_THAN;
+        this.offset++;
+        if (this.offset < source.length && source[this.offset] === '=') {
+          this.offset++;
+          return [startPos, Token.GREATER_EQUAL_THAN];
         }
-        this.pos++;
-        return Tokens.GREATER_THAN;
+        return [startPos, Token.GREATER_THAN];
       }
       case '+': {
-        this.pos++;
-        return Tokens.PLUS;
+        this.offset++;
+        return [startPos, Token.PLUS];
       }
       case '-': {
-        this.pos++;
-        return Tokens.MINUS;
+        this.offset++;
+        return [startPos, Token.MINUS];
       }
       case '*': {
-        this.pos++;
-        return Tokens.ASTERISK;
+        this.offset++;
+        return [startPos, Token.ASTERISK];
       }
       case '/': {
-        this.pos++;
-        return Tokens.SLASH;
+        this.offset++;
+        return [startPos, Token.SLASH];
       }
       case '%': {
-        this.pos++;
-        return Tokens.PERCENT;
+        this.offset++;
+        return [startPos, Token.PERCENT];
       }
       case '=': {
-        if (this.pos + 1 < source.length && source[this.pos + 1] === '=') {
-          this.pos += 2;
-          return Tokens.EQUALS;
+        this.offset++;
+        if (this.offset < source.length && source[this.offset] === '=') {
+          this.offset++;
+          return [startPos, Token.EQUALS];
         }
-        this.pos++;
-        return Tokens.ASSIGN;
+        return [startPos, Token.ASSIGN];
       }
       case '!': {
-        if (this.pos + 1 < source.length && source[this.pos + 1] === '=') {
-          this.pos += 2;
-          return Tokens.NOT_EQUALS;
+        this.offset++;
+        if (this.offset < source.length && source[this.offset] === '=') {
+          this.offset++;
+          return [startPos, Token.NOT_EQUALS];
         }
-        this.pos++;
-        return Tokens.NOT;
+        return [startPos, Token.NOT];
       }
       case '&': {
-        if (this.pos + 1 < source.length && source[this.pos + 1] === '&') {
-          this.pos += 2;
-          return Tokens.AND;
+        this.offset++;
+        if (this.offset < source.length && source[this.offset] === '&') {
+          this.offset++;
+          return [startPos, Token.LOGIC_AND];
         }
-        this.pos++;
-        return Tokens.BIT_AND;
+        return [startPos, Token.BIT_AND];
       }
       case '|': {
-        if (this.pos + 1 < source.length && source[this.pos + 1] === '|') {
-          this.pos += 2;
-          return Tokens.OR;
+        this.offset++;
+        if (this.offset < source.length && source[this.offset] === '|') {
+          this.offset++;
+          return [startPos, Token.LOGIC_OR];
         }
-        this.pos++;
-        return Tokens.BIT_OR;
+        return [startPos, Token.BIT_OR];
       }
       case '^': {
-        this.pos++;
-        return Tokens.BIT_XOR;
+        this.offset++;
+        return [startPos, Token.BIT_XOR];
       }
       case '~': {
-        this.pos++;
-        return Tokens.BIT_NOT;
+        this.offset++;
+        return [startPos, Token.BIT_NOT];
       }
       case '"': {
-        const nextToken = this.nextStringLiteral()!;
-        if (nextToken) {
-          return nextToken;
+        const res = this.nextStringLiteral();
+        if (res) {
+          return [startPos, ...res];
         }
       }
       default: {
-        const nextToken = this.nextNumberLiteral() || this.nextKeywordOrIdentifier();
-        if (nextToken) {
-          return nextToken;
+        const res = this.nextNumberLiteral() || this.nextKeywordOrIdentifier();
+        if (res) {
+          return [startPos, ...res];
         }
       }
     }
 
     // 无法识别的 token
-    return Tokens.ERROR;
+    return [startPos, Token.ILLEGAL];
   }
 
   private skipWhitespace() {
     const { source } = this;
-    while (this.pos < source.length && [' ', '\t', '\r', '\n'].includes(source[this.pos])) {
-      this.pos++;
+    while (this.offset < source.length) {
+      const ch = source[this.offset];
+      if ([' ', '\t', '\r', '\n'].includes(ch)) {
+        this.offset++;
+        if (ch === '\n') {
+          this.lineOffset = this.offset;
+          this.line++;
+        }
+      } else {
+        break;
+      }
     }
   }
 
-  private nextStringLiteral(): Token | null {
-    const { source, pos: start } = this;
+  private nextStringLiteral(): readonly [Token, string] | null {
+    const { source, offset: start } = this;
     const arr = new RegExp(stringLiteralRE).exec(source.slice(start));
     if (!arr) {
       return null;
     }
     const literal = arr[0];
-    this.pos = start + literal.length;
-    return createToken(TokenType.STRING_LITERAL, literal);
+    this.offset = start + literal.length;
+    return [Token.STRING_LITERAL, literal];
   }
 
-  private nextNumberLiteral(): Token | null {
-    const { source, pos: start } = this;
+  private nextNumberLiteral(): readonly [Token, string] | null {
+    const { source, offset: start } = this;
     const arr = new RegExp(numberLiteralRE).exec(source.slice(start));
     if (!arr) {
       return null;
     }
     const literal = arr[0];
-    this.pos = start + literal.length;
-    return createToken(TokenType.NUMBER_LITERAL, +literal);
+    this.offset = start + literal.length;
+    return [Token.NUMBER_LITERAL, literal];
   }
 
-  private nextKeywordOrIdentifier(): Token | null {
-    const { source, pos: start } = this;
+  private nextKeywordOrIdentifier(): readonly [Token, string] | null {
+    const { source, offset: start } = this;
     const arr = new RegExp(identifierRE).exec(source.slice(start));
     if (!arr) {
       return null;
     }
     const literal = arr[0];
-    this.pos = start + literal.length;
+    this.offset = start + literal.length;
     if (isKeyword(literal)) {
-      return getKeywordToken(literal)!;
+      return [getKeywordToken(literal), literal];
     }
-    return createToken(TokenType.IDENTIFIER, literal);
+    return [Token.IDENTIFIER, literal];
   }
 }

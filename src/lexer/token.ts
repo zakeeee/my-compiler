@@ -1,131 +1,141 @@
-export enum TokenType {
-  KEYWORD = 'Keyword',
-  IDENTIFIER = 'Identifier',
-  STRING_LITERAL = 'StringLiteral',
-  NUMBER_LITERAL = 'NumberLiteral',
+export enum Token {
+  // special
+  ILLEGAL = -2,
+  EOF,
+  COMMENT,
+
+  // literals
+  IDENTIFIER,
+  NUMBER_LITERAL,
+  STRING_LITERAL,
+
+  // keywords
+  LET,
+  TRUE,
+  FALSE,
+  NULL,
+  FUNC,
+  IF,
+  ELSE,
+  FOR,
+  WHILE,
+  BREAK,
+  CONTINUE,
+  RETURN,
 
   // operators and punctuations
-  ASSIGN = '=',
-  PLUS = '+',
-  MINUS = '-',
-  ASTERISK = '*',
-  SLASH = '/',
-  PERCENT = '%',
-  EQUALS = '==',
-  NOT = '!',
-  NOT_EQUALS = '!=',
-  GREATER_THAN = '>',
-  GREATER_EQUAL_THAN = '>=',
-  LESS_THAN = '<',
-  LESS_EQUAL_THAN = '<=',
-  BIT_AND = '&',
-  BIT_OR = '|',
-  BIT_XOR = '^',
-  BIT_NOT = '~',
-  AND = '&&',
-  OR = '||',
-  COMMA = ',',
-  SEMICOLON = ';',
-  DOT = '.',
-  COLON = ':',
-  QUESTION_MARK = '?',
-  L_PAREN = '(',
-  R_PAREN = ')',
-  L_BRACE = '{',
-  R_BRACE = '}',
-  L_BRACKET = '[',
-  R_BRACKET = ']',
-
-  // others
-  EOF = 'EOF',
-  ERROR = 'ERROR',
+  ASSIGN,
+  PLUS,
+  MINUS,
+  ASTERISK,
+  SLASH,
+  PERCENT,
+  EQUALS,
+  NOT,
+  NOT_EQUALS,
+  GREATER_THAN,
+  GREATER_EQUAL_THAN,
+  LESS_THAN,
+  LESS_EQUAL_THAN,
+  BIT_AND,
+  BIT_OR,
+  BIT_XOR,
+  BIT_NOT,
+  LOGIC_AND,
+  LOGIC_OR,
+  COMMA,
+  SEMICOLON,
+  DOT,
+  COLON,
+  QUESTION_MARK,
+  L_PAREN,
+  R_PAREN,
+  L_BRACE,
+  R_BRACE,
+  L_BRACKET,
+  R_BRACKET,
 }
 
-export interface Token {
-  readonly type: TokenType;
-  readonly value?: unknown;
-}
+const tokenNameMap = Object.freeze({
+  // special
+  [Token.ILLEGAL]: 'Illegal',
+  [Token.EOF]: 'EOF',
+  [Token.COMMENT]: 'Comment',
 
-export function createToken(type: TokenType, value?: unknown): Token {
-  return {
-    type,
-    value,
-  };
-}
+  [Token.IDENTIFIER]: 'Identifier',
+  [Token.NUMBER_LITERAL]: 'NumberLiteral',
+  [Token.STRING_LITERAL]: 'StringLiteral',
 
-const keywords = new Set([
-  'let',
-  'true',
-  'false',
-  'null',
-  'func',
-  'if',
-  'else',
-  'for',
-  'while',
-  'break',
-  'continue',
-  'return',
-]);
-
-export const Tokens = Object.freeze({
   // keywords
-  LET: createToken(TokenType.KEYWORD, 'let'),
-  TRUE: createToken(TokenType.KEYWORD, 'true'),
-  FALSE: createToken(TokenType.KEYWORD, 'false'),
-  NULL: createToken(TokenType.KEYWORD, 'null'),
-  FUNC: createToken(TokenType.KEYWORD, 'func'),
-  IF: createToken(TokenType.KEYWORD, 'if'),
-  ELSE: createToken(TokenType.KEYWORD, 'else'),
-  FOR: createToken(TokenType.KEYWORD, 'for'),
-  WHILE: createToken(TokenType.KEYWORD, 'while'),
-  BREAK: createToken(TokenType.KEYWORD, 'break'),
-  CONTINUE: createToken(TokenType.KEYWORD, 'continue'),
-  RETURN: createToken(TokenType.KEYWORD, 'return'),
+  [Token.LET]: 'let',
+  [Token.TRUE]: 'true',
+  [Token.FALSE]: 'false',
+  [Token.NULL]: 'null',
+  [Token.FUNC]: 'func',
+  [Token.IF]: 'if',
+  [Token.ELSE]: 'else',
+  [Token.FOR]: 'for',
+  [Token.WHILE]: 'while',
+  [Token.BREAK]: 'break',
+  [Token.CONTINUE]: 'continue',
+  [Token.RETURN]: 'return',
 
-  // operators
-  ASSIGN: createToken(TokenType.ASSIGN),
-  PLUS: createToken(TokenType.PLUS),
-  MINUS: createToken(TokenType.MINUS),
-  ASTERISK: createToken(TokenType.ASTERISK),
-  SLASH: createToken(TokenType.SLASH),
-  PERCENT: createToken(TokenType.PERCENT),
-  EQUALS: createToken(TokenType.EQUALS),
-  NOT: createToken(TokenType.NOT),
-  NOT_EQUALS: createToken(TokenType.NOT_EQUALS),
-  GREATER_THAN: createToken(TokenType.GREATER_THAN),
-  GREATER_EQUAL_THAN: createToken(TokenType.GREATER_EQUAL_THAN),
-  LESS_THAN: createToken(TokenType.LESS_THAN),
-  LESS_EQUAL_THAN: createToken(TokenType.LESS_EQUAL_THAN),
-  BIT_AND: createToken(TokenType.BIT_AND),
-  BIT_OR: createToken(TokenType.BIT_OR),
-  BIT_XOR: createToken(TokenType.BIT_XOR),
-  BIT_NOT: createToken(TokenType.BIT_NOT),
-  AND: createToken(TokenType.AND),
-  OR: createToken(TokenType.OR),
-
-  // punctuations
-  COMMA: createToken(TokenType.COMMA),
-  SEMICOLON: createToken(TokenType.SEMICOLON),
-  DOT: createToken(TokenType.DOT),
-  COLON: createToken(TokenType.COLON),
-  QUESTION_MARK: createToken(TokenType.QUESTION_MARK),
-  L_PAREN: createToken(TokenType.L_PAREN),
-  R_PAREN: createToken(TokenType.R_PAREN),
-  L_BRACE: createToken(TokenType.L_BRACE),
-  R_BRACE: createToken(TokenType.R_BRACE),
-  L_BRACKET: createToken(TokenType.L_BRACKET),
-  R_BRACKET: createToken(TokenType.R_BRACKET),
-
-  // others
-  EOF: createToken(TokenType.EOF),
-  ERROR: createToken(TokenType.ERROR),
+  // operators and punctuations
+  [Token.ASSIGN]: '=',
+  [Token.PLUS]: '+',
+  [Token.MINUS]: '-',
+  [Token.ASTERISK]: '*',
+  [Token.SLASH]: '/',
+  [Token.PERCENT]: '%',
+  [Token.EQUALS]: '==',
+  [Token.NOT]: '!',
+  [Token.NOT_EQUALS]: '!=',
+  [Token.GREATER_THAN]: '>',
+  [Token.GREATER_EQUAL_THAN]: '>=',
+  [Token.LESS_THAN]: '<',
+  [Token.LESS_EQUAL_THAN]: '<=',
+  [Token.BIT_AND]: '&',
+  [Token.BIT_OR]: '|',
+  [Token.BIT_XOR]: '^',
+  [Token.BIT_NOT]: '~',
+  [Token.LOGIC_AND]: '&&',
+  [Token.LOGIC_OR]: '||',
+  [Token.COMMA]: ',',
+  [Token.SEMICOLON]: ';',
+  [Token.DOT]: '.',
+  [Token.COLON]: ':',
+  [Token.QUESTION_MARK]: '?',
+  [Token.L_PAREN]: '(',
+  [Token.R_PAREN]: ')',
+  [Token.L_BRACE]: '{',
+  [Token.R_BRACE]: '}',
+  [Token.L_BRACKET]: '[',
+  [Token.R_BRACKET]: ']',
 });
 
-export function isKeyword(word: string): boolean {
-  return keywords.has(word);
+export function getTokenName(token: Token): string {
+  return tokenNameMap[token];
 }
 
-export function getKeywordToken(keyword: string): Token | null {
-  return Tokens[keyword.toUpperCase() as keyof typeof Tokens] || null;
+const keywordTokenMap = Object.freeze({
+  let: Token.LET,
+  true: Token.TRUE,
+  false: Token.FALSE,
+  null: Token.NULL,
+  func: Token.FUNC,
+  if: Token.IF,
+  else: Token.ELSE,
+  for: Token.FOR,
+  while: Token.WHILE,
+  break: Token.BREAK,
+  continue: Token.CONTINUE,
+  return: Token.RETURN,
+});
+
+export function isKeyword(word: string): word is keyof typeof keywordTokenMap {
+  return keywordTokenMap.hasOwnProperty(word);
+}
+
+export function getKeywordToken<T extends keyof typeof keywordTokenMap>(keyword: T): Token {
+  return keywordTokenMap[keyword];
 }
