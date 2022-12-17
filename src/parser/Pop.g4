@@ -3,17 +3,12 @@ grammar Pop
 
 program: statementList? EOF;
 
-letStatement: LET Identifier '=' singleExpression;
-ifStatement: IF '(' singleExpression ')' '{' statementList? '}' (ELSE '{' statementList? '}')?;
-forStatement
-  : FOR '(' singleExpression? ';' singleExpression? ';' singleExpression? ')' '{' statementList? '}'
-  ;
-whileStatement: WHILE '(' singleExpression ')' '{' statementList? '}';
-continueStatement: CONTINUE;
-breakStatement: BREAK;
-returnStatement: RETURN singleExpression?;
 statement
-  : letStatement
+  : block
+  | emptyStatement
+  | expressionStatement
+  | letStatement
+  | functionStatement
   | ifStatement
   | forStatement
   | whileStatement
@@ -21,44 +16,68 @@ statement
   | breakStatement
   | returnStatement
   ;
-statementList: (statement ';')*;
+
+statementList: statement+;
+
+block: '{' statementList? '}';
+
+emptyStatement: ';';
+
+expressionStatement: expressionSequence;
+
+letStatement: LET Identifier '=' expression;
+
+formalParameters: (Identifier (',' Identifier)*)?;
+
+functionStatement: FUNC Identifier '(' formalParameters ')' block;
+
+ifStatement: IF '(' expression ')' statement (ELSE statement)?;
+
+forStatement: FOR '(' expression? ';' expression? ';' expression? ')' statement;
+
+whileStatement: WHILE '(' expression ')' statement;
+
+continueStatement: CONTINUE;
+
+breakStatement: BREAK;
+
+returnStatement: RETURN expression?;
 
 parameterList: Identifier (',' Identifier)*;
-expressionSequence: singleExpression (',' singleExpression)*;
-singleExpression
-  : FUNC Identifier? '(' parameterList? ')' '{' statementList? '}' # FunctionExpression
-  | singleExpression '[' expressionSequence ']'                    # MemberIndexExpression
-  | singleExpression '.' (Identifier | keywords)                   # MemberDotExpression
-  | singleExpression '(' expressionSequence? ')'                   # ArgumentsExpression
-  | '+' singleExpression                                           # UnaryPlusExpression
-  | '-' singleExpression                                           # UnaryMinusExpression
-  | '~' singleExpression                                           # BitNotExpression
-  | '!' singleExpression                                           # NotExpression
-  | singleExpression ('*' | '/' | '%') singleExpression            # MultiplicativeExpression
-  | singleExpression ('+' | '-') singleExpression                  # AdditiveExpression
-  | singleExpression ('<' | '>' | '<=' | '>=') singleExpression    # RelationalExpression
-  | singleExpression ('==' | '!=') singleExpression                # EqualityExpression
-  | singleExpression '&' singleExpression                          # BitAndExpression
-  | singleExpression '|' singleExpression                          # BitOrExpression
-  | singleExpression '^' singleExpression                          # BitXOrExpression
-  | singleExpression '&&' singleExpression                         # LogicalAndExpression
-  | singleExpression '||' singleExpression                         # LogicalOrExpression
-  | singleExpression '=' expressionSequence                        # AssignmentExpression
-  | Identifier                                                     # IdentifierExpression
-  | literal                                                        # LiteralExpression
-  | '[' expressionSequence? ']'                                    # ArrayLiteralExpression
-  | '(' expressionSequence ')'                                     # ParenthesizedExpression
+
+expressionSequence: expression (',' expression)*;
+
+expression
+  : unaOpExpression
+  | binOpExpression
+  | callExpression
+  | literalExpression
+  | identifierExpression
+  | '(' expression ')'
   ;
 
-Identifier: [A-Za-z][A-Za-z0-9]*;
-nullLiteral: NULL;
-booleanLiteral: TRUE | FALSE;
-stringLiteral: '"' StringCharacter* '"';
-numberLiteral
-  : DecimalIntegerLiteral '.' DecimalDigit* ExponentPart?
-  | DecimalIntegerLiteral ExponentPart?
+unaOpExpression: '+' expression | '-' expression | '~' expression | '!' expression;
+
+binOpExpression
+  : expression ('*' | '/' | '%') expression
+  | expression ('+' | '-') expression
+  | expression ('<' | '>' | '<=' | '>=') expression
+  | expression ('==' | '!=') expression
+  | expression '&' expression
+  | expression '|' expression
+  | expression '^' expression
+  | expression '&&' expression
+  | expression '||' expression
+  | expression '=' expressionSequence
   ;
-literal: nullLiteral | booleanLiteral | stringLiteral | numberLiteral;
+
+arguments: expressionSequence?;
+
+callExpression: Identifier '(' arguments ')';
+
+literalExpression: NullLiteral | BooleanLiteral | StringLiteral | DecimalLiteral;
+
+identifierExpression: Identifier;
 
 keywords: LET | TRUE | FALSE | NULL | FUNC | IF | ELSE | FOR | WHILE | BREAK | CONTINUE | RETURN;
 
@@ -74,6 +93,21 @@ WHILE: 'while';
 BREAK: 'break';
 CONTINUE: 'continue';
 RETURN: 'return';
+
+Identifier: [A-Za-z][A-Za-z0-9]*;
+
+NullLiteral: NULL;
+
+BooleanLiteral: TRUE | FALSE;
+
+StringLiteral: '"' StringCharacter* '"';
+
+DecimalLiteral
+  : DecimalIntegerLiteral '.' DecimalDigit* ExponentPart?
+  | DecimalIntegerLiteral ExponentPart?
+  ;
+
+Skip: [ \t\r\n]+ -> skip;
 
 fragment DecimalDigit: [0-9];
 

@@ -22,166 +22,185 @@ type Position = {
   column: number;
 };
 
-type Literal = string;
+export type LexerSymbol = {
+  token: Token;
+  literal: string;
+  start: Position;
+  end: Position;
+};
 
-export class Lexer {
+export const createLexerSymbol = (token: Token, literal: string, start: Position, end: Position) => ({
+  token,
+  literal,
+  start,
+  end,
+});
+
+export default class Lexer {
   private offset = 0;
   private line = 1;
   private lineOffset = 0; // 当前行起始 offset
 
   constructor(private source: string) {}
 
-  next(): readonly [Position, Token, Literal] {
+  nextSymbol(): LexerSymbol {
     this.skipWhitespace();
 
-    const { source, offset, line, lineOffset } = this;
-    const startPos = {
-      line,
-      column: offset - lineOffset + 1,
-    };
+    const { source } = this;
+    const startPos = this.getPos();
 
     if (this.offset === source.length) {
-      return [startPos, Token.EOF, ''];
+      return createLexerSymbol(Token.EOF, '', startPos, startPos);
     }
 
     const ch = source[this.offset];
     switch (ch) {
       case ',': {
         this.offset++;
-        return [startPos, Token.COMMA, ch];
+        return createLexerSymbol(Token.COMMA, ch, startPos, this.getPos());
       }
       case ';': {
         this.offset++;
-        return [startPos, Token.SEMICOLON, ch];
+        return createLexerSymbol(Token.SEMICOLON, ch, startPos, this.getPos());
       }
       case '.': {
         this.offset++;
-        return [startPos, Token.DOT, ch];
+        return createLexerSymbol(Token.DOT, ch, startPos, this.getPos());
       }
       case ':': {
         this.offset++;
-        return [startPos, Token.COLON, ch];
+        return createLexerSymbol(Token.COLON, ch, startPos, this.getPos());
       }
       case '?': {
         this.offset++;
-        return [startPos, Token.QUESTION_MARK, ch];
+        return createLexerSymbol(Token.QUESTION_MARK, ch, startPos, this.getPos());
       }
       case '(': {
         this.offset++;
-        return [startPos, Token.L_PAREN, ch];
+        return createLexerSymbol(Token.L_PAREN, ch, startPos, this.getPos());
       }
       case ')': {
         this.offset++;
-        return [startPos, Token.R_PAREN, ch];
+        return createLexerSymbol(Token.R_PAREN, ch, startPos, this.getPos());
       }
       case '{': {
         this.offset++;
-        return [startPos, Token.L_BRACE, ch];
+        return createLexerSymbol(Token.L_BRACE, ch, startPos, this.getPos());
       }
       case '}': {
         this.offset++;
-        return [startPos, Token.R_BRACE, ch];
+        return createLexerSymbol(Token.R_BRACE, ch, startPos, this.getPos());
       }
       case '[': {
         this.offset++;
-        return [startPos, Token.L_BRACKET, ch];
+        return createLexerSymbol(Token.L_BRACKET, ch, startPos, this.getPos());
       }
       case ']': {
         this.offset++;
-        return [startPos, Token.R_BRACKET, ch];
+        return createLexerSymbol(Token.R_BRACKET, ch, startPos, this.getPos());
       }
       case '<': {
         this.offset++;
         if (this.offset < source.length && source[this.offset] === '=') {
           this.offset++;
-          return [startPos, Token.LESS_EQUAL_THAN, '<='];
+          return createLexerSymbol(Token.LESS_EQUAL_THAN, '<=', startPos, this.getPos());
         }
-        return [startPos, Token.LESS_THAN, ch];
+        return createLexerSymbol(Token.LESS_THAN, ch, startPos, this.getPos());
       }
       case '>': {
         this.offset++;
         if (this.offset < source.length && source[this.offset] === '=') {
           this.offset++;
-          return [startPos, Token.GREATER_EQUAL_THAN, '>='];
+          return createLexerSymbol(Token.GREATER_EQUAL_THAN, '>=', startPos, this.getPos());
         }
-        return [startPos, Token.GREATER_THAN, ch];
+        return createLexerSymbol(Token.GREATER_THAN, ch, startPos, this.getPos());
       }
       case '+': {
         this.offset++;
-        return [startPos, Token.PLUS, ch];
+        return createLexerSymbol(Token.PLUS, ch, startPos, this.getPos());
       }
       case '-': {
         this.offset++;
-        return [startPos, Token.MINUS, ch];
+        return createLexerSymbol(Token.MINUS, ch, startPos, this.getPos());
       }
       case '*': {
         this.offset++;
-        return [startPos, Token.ASTERISK, ch];
+        return createLexerSymbol(Token.ASTERISK, ch, startPos, this.getPos());
       }
       case '/': {
         this.offset++;
-        return [startPos, Token.SLASH, ch];
+        return createLexerSymbol(Token.SLASH, ch, startPos, this.getPos());
       }
       case '%': {
         this.offset++;
-        return [startPos, Token.PERCENT, ch];
+        return createLexerSymbol(Token.PERCENT, ch, startPos, this.getPos());
       }
       case '=': {
         this.offset++;
         if (this.offset < source.length && source[this.offset] === '=') {
           this.offset++;
-          return [startPos, Token.EQUALS, '=='];
+          return createLexerSymbol(Token.EQUALS, '==', startPos, this.getPos());
         }
-        return [startPos, Token.ASSIGN, ch];
+        return createLexerSymbol(Token.ASSIGN, ch, startPos, this.getPos());
       }
       case '!': {
         this.offset++;
         if (this.offset < source.length && source[this.offset] === '=') {
           this.offset++;
-          return [startPos, Token.NOT_EQUALS, '!='];
+          return createLexerSymbol(Token.NOT_EQUALS, '!=', startPos, this.getPos());
         }
-        return [startPos, Token.NOT, ch];
+        return createLexerSymbol(Token.NOT, ch, startPos, this.getPos());
       }
       case '&': {
         this.offset++;
         if (this.offset < source.length && source[this.offset] === '&') {
           this.offset++;
-          return [startPos, Token.LOGIC_AND, '&&'];
+          return createLexerSymbol(Token.LOGIC_AND, '&&', startPos, this.getPos());
         }
-        return [startPos, Token.BIT_AND, ch];
+        return createLexerSymbol(Token.BIT_AND, ch, startPos, this.getPos());
       }
       case '|': {
         this.offset++;
         if (this.offset < source.length && source[this.offset] === '|') {
           this.offset++;
-          return [startPos, Token.LOGIC_OR, '||'];
+          return createLexerSymbol(Token.LOGIC_OR, '||', startPos, this.getPos());
         }
-        return [startPos, Token.BIT_OR, ch];
+        return createLexerSymbol(Token.BIT_OR, ch, startPos, this.getPos());
       }
       case '^': {
         this.offset++;
-        return [startPos, Token.BIT_XOR, ch];
+        return createLexerSymbol(Token.BIT_XOR, ch, startPos, this.getPos());
       }
       case '~': {
         this.offset++;
-        return [startPos, Token.BIT_NOT, ch];
+        return createLexerSymbol(Token.BIT_NOT, ch, startPos, this.getPos());
       }
       case '"': {
         const res = this.nextStringLiteral();
         if (res) {
-          return [startPos, ...res];
+          const [token, literal] = res;
+          return createLexerSymbol(token, literal, startPos, this.getPos());
         }
       }
       default: {
         const res = this.nextNumberLiteral() || this.nextKeywordOrIdentifier();
         if (res) {
-          return [startPos, ...res];
+          const [token, literal] = res;
+          return createLexerSymbol(token, literal, startPos, this.getPos());
         }
       }
     }
 
     // 无法识别的 token
-    return [startPos, Token.ILLEGAL, ''];
+    return createLexerSymbol(Token.ILLEGAL, '', startPos, startPos);
+  }
+
+  private getPos(): Position {
+    const { line, offset, lineOffset } = this;
+    return {
+      line,
+      column: offset - lineOffset + 1,
+    };
   }
 
   private skipWhitespace() {
