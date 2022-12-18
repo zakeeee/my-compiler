@@ -8,10 +8,13 @@ import {
   ExpressionStatement,
   ForStatement,
   FuncDeclarationStatement,
+  FunctionExpression,
   IdentifierExpression,
   IfStatement,
+  InfixExpression,
   LetStatement,
   LiteralExpression,
+  PrefixExpression,
   Program,
   ReturnStatement,
   Statement,
@@ -23,7 +26,7 @@ import { getTokenName, Lexer, LexerSymbol, Token } from '../lexer';
 class ParseError extends Error {
   constructor(symbol: LexerSymbol) {
     super('parse error');
-    console.log(symbol);
+    console.log('current symbol:', symbol);
     this.name = 'ParseError';
   }
 }
@@ -31,19 +34,93 @@ class ParseError extends Error {
 class UnexpectedTokenError extends ParseError {
   constructor(symbol: LexerSymbol, expectedToken: Token) {
     super(symbol);
-    console.log('expectedToken: ', getTokenName(expectedToken));
+    const { start, token } = symbol;
+    this.message = `expect token "${getTokenName(
+      expectedToken
+    )}", got "${getTokenName(token)}" at [${start.line}:${start.column}]`;
     this.name = 'UnexpectedTokenError';
   }
 }
 
+enum Precedence {
+  LOWEST,
+  ASSIGN, // =
+  LOGIC_OP, // &&, ||
+  BIT_OP, // &, |, ^
+  EQUALS, // ==, !=
+  LESS_GREATER, // >, >=, <, <=
+  SUM, // +, -
+  PRODUCT, // *, /
+  PREFIX, // +, -, !
+  CALL,
+}
+
+const precedences = {
+  [Token.ASSIGN]: Precedence.ASSIGN,
+  [Token.LOGIC_AND]: Precedence.LOGIC_OP,
+  [Token.LOGIC_OR]: Precedence.LOGIC_OP,
+  [Token.BIT_AND]: Precedence.BIT_OP,
+  [Token.BIT_OR]: Precedence.BIT_OP,
+  [Token.BIT_XOR]: Precedence.BIT_OP,
+  [Token.EQUALS]: Precedence.EQUALS,
+  [Token.NOT_EQUALS]: Precedence.EQUALS,
+  [Token.LESS_THAN]: Precedence.LESS_GREATER,
+  [Token.LESS_EQUAL_THAN]: Precedence.LESS_GREATER,
+  [Token.GREATER_THAN]: Precedence.LESS_GREATER,
+  [Token.GREATER_EQUAL_THAN]: Precedence.LESS_GREATER,
+  [Token.PLUS]: Precedence.SUM,
+  [Token.MINUS]: Precedence.SUM,
+  [Token.ASTERISK]: Precedence.PRODUCT,
+  [Token.SLASH]: Precedence.PRODUCT,
+  [Token.PERCENT]: Precedence.PRODUCT,
+  [Token.L_PAREN]: Precedence.CALL,
+} as Readonly<Record<Token, Precedence>>;
+
 export class Parser {
   private currentSymbol!: LexerSymbol;
   private nextSymbol!: LexerSymbol;
+  private prefixParseFuncs = new Map<Token, () => Expression>();
+  private infixParseFuncs = new Map<Token, (left: Expression) => Expression>();
 
   constructor(private lexer: Lexer) {
     // 初始化 currentSymbol 和 nextSymbol
     this.readNextSymbol();
     this.readNextSymbol();
+
+    [Token.PLUS, Token.MINUS, Token.NOT, Token.BIT_NOT].forEach((token) => {
+      this.prefixParseFuncs.set(token, this.parsePrefixExpression.bind(this));
+    });
+    this.prefixParseFuncs.set(Token.IDENTIFIER, this.parseIdentifierExpression.bind(this));
+    [Token.NULL, Token.TRUE, Token.FALSE, Token.NUMBER_LITERAL, Token.STRING_LITERAL].forEach(
+      (token) => {
+        this.prefixParseFuncs.set(token, this.parseLiteralExpression.bind(this));
+      }
+    );
+    this.prefixParseFuncs.set(Token.L_PAREN, this.parseGroupedExpression.bind(this));
+    this.prefixParseFuncs.set(Token.FUNC, this.parseFunctionExpression.bind(this));
+
+    [
+      Token.ASSIGN,
+      Token.LOGIC_AND,
+      Token.LOGIC_OR,
+      Token.BIT_AND,
+      Token.BIT_OR,
+      Token.BIT_XOR,
+      Token.EQUALS,
+      Token.NOT_EQUALS,
+      Token.LESS_THAN,
+      Token.LESS_EQUAL_THAN,
+      Token.GREATER_THAN,
+      Token.GREATER_EQUAL_THAN,
+      Token.PLUS,
+      Token.MINUS,
+      Token.ASTERISK,
+      Token.SLASH,
+      Token.PERCENT,
+    ].forEach((token) => {
+      this.infixParseFuncs.set(token, this.parseInfixExpression.bind(this));
+    });
+    this.infixParseFuncs.set(Token.L_PAREN, this.parseCallExpression.bind(this));
   }
 
   parseProgram(): Program {
@@ -104,11 +181,11 @@ export class Parser {
   parseExpressionStatement(): ExpressionStatement {
     const stmt = new ExpressionStatement();
     const expressions: Expression[] = [];
-    if (!this.nextTokenIs(Token.SEMICOLON)) {
-      expressions.push(this.parseExpression());
+    if (!this.currentTokenIs(Token.SEMICOLON)) {
+      expressions.push(this.parseExpression(Precedence.LOWEST));
       while (this.currentTokenIs(Token.COMMA)) {
         this.parseToken(Token.COMMA);
-        expressions.push(this.parseExpression());
+        expressions.push(this.parseExpression(Precedence.LOWEST));
       }
     }
     stmt.expressions = expressions;
@@ -121,7 +198,7 @@ export class Parser {
     this.parseToken(Token.LET);
     statement.identifier = this.parseIdentifier();
     this.parseToken(Token.ASSIGN);
-    statement.value = this.parseExpression();
+    statement.value = this.parseExpression(Precedence.LOWEST);
     this.parseToken(Token.SEMICOLON);
     return statement;
   }
@@ -149,10 +226,11 @@ export class Parser {
     const stmt = new IfStatement();
     this.parseToken(Token.IF);
     this.parseToken(Token.L_PAREN);
-    stmt.condition = this.parseExpression();
+    stmt.condition = this.parseExpression(Precedence.LOWEST);
     this.parseToken(Token.R_PAREN);
     stmt.trueBranch = this.parseStatement();
-    if (this.nextTokenIs(Token.ELSE)) {
+    if (this.currentTokenIs(Token.ELSE)) {
+      this.parseToken(Token.ELSE);
       stmt.falseBranch = this.parseStatement();
     }
     return stmt;
@@ -162,16 +240,16 @@ export class Parser {
     const stmt = new ForStatement();
     this.parseToken(Token.FOR);
     this.parseToken(Token.L_PAREN);
-    if (!this.nextTokenIs(Token.SEMICOLON)) {
-      stmt.initialize = this.parseExpression();
+    if (!this.currentTokenIs(Token.SEMICOLON)) {
+      stmt.initialize = this.parseExpression(Precedence.LOWEST);
     }
     this.parseToken(Token.SEMICOLON);
-    if (!this.nextTokenIs(Token.SEMICOLON)) {
-      stmt.condition = this.parseExpression();
+    if (!this.currentTokenIs(Token.SEMICOLON)) {
+      stmt.condition = this.parseExpression(Precedence.LOWEST);
     }
     this.parseToken(Token.SEMICOLON);
-    if (!this.nextTokenIs(Token.R_PAREN)) {
-      stmt.afterEach = this.parseExpression();
+    if (!this.currentTokenIs(Token.R_PAREN)) {
+      stmt.afterEach = this.parseExpression(Precedence.LOWEST);
     }
     this.parseToken(Token.R_PAREN);
     stmt.body = this.parseStatement();
@@ -182,7 +260,7 @@ export class Parser {
     const stmt = new WhileStatement();
     this.parseToken(Token.WHILE);
     this.parseToken(Token.L_PAREN);
-    stmt.condition = this.parseExpression();
+    stmt.condition = this.parseExpression(Precedence.LOWEST);
     this.parseToken(Token.R_PAREN);
     stmt.body = this.parseStatement();
     return stmt;
@@ -203,66 +281,112 @@ export class Parser {
   parseReturnStatement(): ReturnStatement {
     const stmt = new ReturnStatement();
     this.parseToken(Token.RETURN);
-    stmt.returnValue = this.parseExpression();
+    stmt.returnValue = this.parseExpression(Precedence.LOWEST);
     this.parseToken(Token.SEMICOLON);
     return stmt;
   }
 
-  parseExpression(): Expression {
+  parseExpression(precedence: Precedence): Expression {
+    // Pratt parsing algorithm
+    const prefixParseFunc = this.prefixParseFuncs.get(this.currentSymbol.token);
+    if (!prefixParseFunc) {
+      throw new ParseError(this.currentSymbol);
+    }
+    let leftExpr = prefixParseFunc();
+
+    while (!this.currentTokenIs(Token.SEMICOLON) && precedence < this.currentPrecedence()) {
+      const infixParseFunc = this.infixParseFuncs.get(this.currentSymbol.token);
+      if (!infixParseFunc) {
+        return leftExpr;
+      }
+      leftExpr = infixParseFunc(leftExpr);
+    }
+    return leftExpr;
+  }
+
+  parseIdentifierExpression(): IdentifierExpression {
+    const expr = new IdentifierExpression();
+    expr.symbol = this.parseIdentifier();
+    return expr;
+  }
+
+  parseFunctionExpression(): FunctionExpression {
+    const expr = new FunctionExpression();
+    this.parseToken(Token.FUNC);
+    this.parseToken(Token.L_PAREN);
+    const parameters: LexerSymbol[] = [];
+    if (!this.currentTokenIs(Token.R_PAREN)) {
+      parameters.push(this.parseIdentifier());
+      while (this.currentTokenIs(Token.COMMA)) {
+        this.parseToken(Token.COMMA);
+        parameters.push(this.parseIdentifier());
+      }
+    }
+    expr.parameters = parameters;
+    this.parseToken(Token.R_PAREN);
+    expr.body = this.parseBlockStatement();
+    return expr;
+  }
+
+  parseLiteralExpression(): LiteralExpression {
+    const expr = new LiteralExpression();
+    expr.symbol = { ...this.currentSymbol };
     switch (this.currentSymbol.token) {
       case Token.NULL:
+        expr.value = null;
+        break;
       case Token.TRUE:
-      case Token.FALSE: {
-        const expr = new LiteralExpression();
-        expr.symbol = this.currentSymbol;
-        expr.value = this.currentTokenIs(Token.NULL) ? null : this.currentTokenIs(Token.TRUE);
-        this.readNextSymbol();
-        return expr;
-      }
+      case Token.FALSE:
+        expr.value = this.currentTokenIs(Token.TRUE);
+        break;
       case Token.NUMBER_LITERAL:
-      case Token.STRING_LITERAL: {
-        const expr = new LiteralExpression();
-        expr.symbol = this.currentSymbol;
+        expr.value = +this.currentSymbol.literal;
+        break;
+      case Token.STRING_LITERAL:
         expr.value = this.currentSymbol.literal;
-        if (this.currentTokenIs(Token.NUMBER_LITERAL)) {
-          expr.value = +(expr.value as string);
-        }
-        this.readNextSymbol();
-        return expr;
-      }
-      case Token.L_PAREN: {
-        this.parseToken(Token.L_PAREN);
-        const expr = this.parseExpression();
-        this.parseToken(Token.R_PAREN);
-        return expr;
-      }
-      case Token.IDENTIFIER: {
-        if (this.nextTokenIs(Token.L_PAREN)) {
-          return this.parseCallExpression();
-        }
-        const expr = new IdentifierExpression();
-        expr.symbol = this.parseIdentifier();
-        return expr;
-      }
+        break;
       default:
         throw new ParseError(this.currentSymbol);
     }
+    this.readNextSymbol();
+    return expr;
   }
 
-  parseUnaOpExpression() {}
+  parsePrefixExpression(): Expression {
+    const expr = new PrefixExpression();
+    expr.operator = { ...this.currentSymbol };
+    this.readNextSymbol();
+    expr.operand = this.parseExpression(Precedence.PREFIX);
+    return expr;
+  }
 
-  parseBinOpExpression() {}
+  parseInfixExpression(left: Expression): Expression {
+    const expr = new InfixExpression();
+    expr.leftOperand = left;
+    expr.operator = { ...this.currentSymbol };
+    const precedence = this.currentPrecedence();
+    this.readNextSymbol();
+    expr.rightOperand = this.parseExpression(precedence);
+    return expr;
+  }
 
-  parseCallExpression(): CallExpression {
+  parseGroupedExpression(): Expression {
+    this.parseToken(Token.L_PAREN);
+    const expr = this.parseExpression(Precedence.LOWEST);
+    this.parseToken(Token.R_PAREN);
+    return expr;
+  }
+
+  parseCallExpression(left: Expression): CallExpression {
     const expr = new CallExpression();
-    expr.identifier = this.parseIdentifier();
+    expr.callable = left;
     this.parseToken(Token.L_PAREN);
     const args: Expression[] = [];
     if (!this.currentTokenIs(Token.R_PAREN)) {
-      args.push(this.parseExpression());
+      args.push(this.parseExpression(Precedence.LOWEST));
       while (this.currentTokenIs(Token.COMMA)) {
         this.parseToken(Token.COMMA);
-        args.push(this.parseExpression());
+        args.push(this.parseExpression(Precedence.LOWEST));
       }
     }
     expr.arguments = args;
@@ -297,5 +421,13 @@ export class Parser {
 
   private nextTokenIs(token: Token) {
     return this.nextSymbol.token === token;
+  }
+
+  private currentPrecedence(): Precedence {
+    return precedences[this.currentSymbol.token] ?? Precedence.LOWEST;
+  }
+
+  private nextPrecedence(): Precedence {
+    return precedences[this.nextSymbol.token] ?? Precedence.LOWEST;
   }
 }

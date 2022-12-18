@@ -43,22 +43,21 @@ breakStatement: BREAK;
 
 returnStatement: RETURN expression?;
 
-parameterList: Identifier (',' Identifier)*;
-
 expressionSequence: expression (',' expression)*;
 
 expression
-  : unaOpExpression
-  | binOpExpression
+  : prefixExpression
+  | infixExpression
+  | functionExpression
   | callExpression
   | literalExpression
   | identifierExpression
   | '(' expression ')'
   ;
 
-unaOpExpression: '+' expression | '-' expression | '~' expression | '!' expression;
+prefixExpression: '+' expression | '-' expression | '~' expression | '!' expression;
 
-binOpExpression
+infixExpression
   : expression ('*' | '/' | '%') expression
   | expression ('+' | '-') expression
   | expression ('<' | '>' | '<=' | '>=') expression
@@ -71,9 +70,11 @@ binOpExpression
   | expression '=' expressionSequence
   ;
 
+functionExpression: FUNC '(' parameters ')' blockStatement;
+
 arguments: expressionSequence?;
 
-callExpression: Identifier '(' arguments ')';
+callExpression: expression '(' arguments ')';
 
 literalExpression: NullLiteral | BooleanLiteral | StringLiteral | DecimalLiteral;
 

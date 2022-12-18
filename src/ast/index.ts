@@ -55,19 +55,19 @@ export class ReturnStatement extends Statement {
 
 export abstract class Expression {}
 
-export class UnaOpExpression extends Expression {
+export class PrefixExpression extends Expression {
   operator: LexerSymbol | null = null;
   operand: Expression | null = null;
 }
 
-export class BinOpExpression extends Expression {
+export class InfixExpression extends Expression {
   operator: LexerSymbol | null = null;
   leftOperand: Expression | null = null;
   rightOperand: Expression | null = null;
 }
 
 export class CallExpression extends Expression {
-  identifier: LexerSymbol | null = null;
+  callable: Expression | null = null;
   arguments: Expression[] = [];
 }
 
@@ -78,4 +78,9 @@ export class LiteralExpression extends Expression {
 
 export class IdentifierExpression extends Expression {
   symbol: LexerSymbol | null = null;
+}
+
+export class FunctionExpression extends Expression {
+  parameters: LexerSymbol[] = [];
+  body: BlockStatement | null = null;
 }
