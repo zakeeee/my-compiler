@@ -1,4 +1,4 @@
-import { LexerSymbol, Token } from 'src/lexer';
+import { LexerSymbol } from 'src/lexer';
 
 export class Program {
   body: Statement[] = [];
@@ -6,7 +6,7 @@ export class Program {
 
 export abstract class Statement {}
 
-export class Block extends Statement {
+export class BlockStatement extends Statement {
   statements: Statement[] = [];
 }
 
@@ -21,10 +21,10 @@ export class LetStatement extends Statement {
   value: Expression | null = null;
 }
 
-export class FunctionStatement extends Statement {
+export class FuncDeclarationStatement extends Statement {
   identifier: LexerSymbol | null = null;
-  formalParameters: LexerSymbol[] = [];
-  body: Block | null = null;
+  parameters: LexerSymbol[] = [];
+  body: BlockStatement | null = null;
 }
 
 export class IfStatement extends Statement {
@@ -37,6 +37,7 @@ export class ForStatement extends Statement {
   initialize: Expression | null = null;
   condition: Expression | null = null;
   afterEach: Expression | null = null;
+  body: Statement | null = null;
 }
 
 export class WhileStatement extends Statement {
@@ -55,12 +56,12 @@ export class ReturnStatement extends Statement {
 export abstract class Expression {}
 
 export class UnaOpExpression extends Expression {
-  operator: Token | null = null;
+  operator: LexerSymbol | null = null;
   operand: Expression | null = null;
 }
 
 export class BinOpExpression extends Expression {
-  operator: Token | null = null;
+  operator: LexerSymbol | null = null;
   leftOperand: Expression | null = null;
   rightOperand: Expression | null = null;
 }

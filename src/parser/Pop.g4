@@ -4,11 +4,11 @@ grammar Pop
 program: statementList? EOF;
 
 statement
-  : block
+  : blockStatement
   | emptyStatement
   | expressionStatement
   | letStatement
-  | functionStatement
+  | funcDeclarationStatement
   | ifStatement
   | forStatement
   | whileStatement
@@ -19,17 +19,17 @@ statement
 
 statementList: statement+;
 
-block: '{' statementList? '}';
+blockStatement: '{' statementList? '}';
 
 emptyStatement: ';';
 
-expressionStatement: expressionSequence;
+expressionStatement: expressionSequence ';';
 
 letStatement: LET Identifier '=' expression;
 
-formalParameters: (Identifier (',' Identifier)*)?;
+parameters: (Identifier (',' Identifier)*)?;
 
-functionStatement: FUNC Identifier '(' formalParameters ')' block;
+funcDeclarationStatement: FUNC Identifier '(' parameters ')' blockStatement;
 
 ifStatement: IF '(' expression ')' statement (ELSE statement)?;
 
