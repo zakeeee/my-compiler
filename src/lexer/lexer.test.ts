@@ -1,19 +1,19 @@
-import { describe, expect, it } from 'vitest';
-import Lexer, { createLexerSymbol } from './lexer';
-import { getTokenName, Token } from './token';
+import { describe, expect, it } from 'vitest'
+import Lexer, { createLexerSymbol } from './lexer'
+import { getTokenName, Token } from './token'
 
 describe('Lexer', () => {
   it('should recognize operators and punctuations', () => {
-    const input = '= + - * / % == ! != > >= < <= , ; . : ? ( ) { } [ ] & | ^ ~ && ||';
-    const items: unknown[] = [];
+    const input = '= + - * / % == ! != > >= < <= , ; . : ? ( ) { } [ ] & | ^ ~ && || \\'
+    const items: unknown[] = []
 
-    const lexer = new Lexer(input);
+    const lexer = new Lexer(input)
     for (let sym = lexer.nextSymbol(); sym.token !== Token.EOF; sym = lexer.nextSymbol()) {
       if (sym.token === Token.ILLEGAL) {
-        const { start } = sym;
-        throw new Error(`illegal token at ${start.line}:${start.column}`);
+        const { start } = sym
+        throw new Error(`illegal token at ${start.line}:${start.column}`)
       }
-      items.push(sym);
+      items.push(sym)
     }
 
     const expected = [
@@ -54,7 +54,7 @@ describe('Lexer', () => {
         end: { line: 1, column: 12 },
       },
       {
-        token: Token.EQUALS,
+        token: Token.EQUAL,
         literal: '==',
         start: { line: 1, column: 13 },
         end: { line: 1, column: 15 },
@@ -66,7 +66,7 @@ describe('Lexer', () => {
         end: { line: 1, column: 17 },
       },
       {
-        token: Token.NOT_EQUALS,
+        token: Token.NOT_EQUAL,
         literal: '!=',
         start: { line: 1, column: 18 },
         end: { line: 1, column: 20 },
@@ -78,7 +78,7 @@ describe('Lexer', () => {
         end: { line: 1, column: 22 },
       },
       {
-        token: Token.GREATER_EQUAL_THAN,
+        token: Token.GREATER_THAN_EQUAL,
         literal: '>=',
         start: { line: 1, column: 23 },
         end: { line: 1, column: 25 },
@@ -90,7 +90,7 @@ describe('Lexer', () => {
         end: { line: 1, column: 27 },
       },
       {
-        token: Token.LESS_EQUAL_THAN,
+        token: Token.LESS_THAN_EQUAL,
         literal: '<=',
         start: { line: 1, column: 28 },
         end: { line: 1, column: 30 },
@@ -197,21 +197,27 @@ describe('Lexer', () => {
         start: { line: 1, column: 64 },
         end: { line: 1, column: 66 },
       },
-    ];
-    expect(items).toEqual(expected);
-  });
+      {
+        token: Token.BACK_SLASH,
+        literal: '\\',
+        start: { line: 1, column: 67 },
+        end: { line: 1, column: 68 },
+      },
+    ]
+    expect(items).toEqual(expected)
+  })
 
   it('should recognize keywords', () => {
-    const input = 'let true false null func if else for while break continue return';
-    const items: unknown[] = [];
+    const input = 'let true false null func if else for while break continue return'
+    const items: unknown[] = []
 
-    const lexer = new Lexer(input);
+    const lexer = new Lexer(input)
     for (let sym = lexer.nextSymbol(); sym.token !== Token.EOF; sym = lexer.nextSymbol()) {
       if (sym.token === Token.ILLEGAL) {
-        const { start } = sym;
-        throw new Error(`illegal token at ${start.line}:${start.column}`);
+        const { start } = sym
+        throw new Error(`illegal token at ${start.line}:${start.column}`)
       }
-      items.push(sym);
+      items.push(sym)
     }
 
     const expected = [
@@ -287,21 +293,21 @@ describe('Lexer', () => {
         start: { line: 1, column: 59 },
         end: { line: 1, column: 65 },
       },
-    ];
-    expect(items).toEqual(expected);
-  });
+    ]
+    expect(items).toEqual(expected)
+  })
 
   it('should recognize identifiers', () => {
-    const input = 'foO Bar a0 b123';
-    const items: unknown[] = [];
+    const input = 'foO Bar a0 b123'
+    const items: unknown[] = []
 
-    const lexer = new Lexer(input);
+    const lexer = new Lexer(input)
     for (let sym = lexer.nextSymbol(); sym.token !== Token.EOF; sym = lexer.nextSymbol()) {
       if (sym.token === Token.ILLEGAL) {
-        const { start } = sym;
-        throw new Error(`illegal token at ${start.line}:${start.column}`);
+        const { start } = sym
+        throw new Error(`illegal token at ${start.line}:${start.column}`)
       }
-      items.push(sym);
+      items.push(sym)
     }
 
     const expected = [
@@ -329,21 +335,21 @@ describe('Lexer', () => {
         start: { line: 1, column: 12 },
         end: { line: 1, column: 16 },
       },
-    ];
-    expect(items).toEqual(expected);
-  });
+    ]
+    expect(items).toEqual(expected)
+  })
 
   it('should recognize number literals', () => {
-    const input = '0 -1 1 -3.14 3.14 3e-3 0.1e2 +1.2e+5';
-    const items: unknown[] = [];
+    const input = '0 -1 1 -3.14 3.14 3e-3 0.1e2 +1.2e+5'
+    const items: unknown[] = []
 
-    const lexer = new Lexer(input);
+    const lexer = new Lexer(input)
     for (let sym = lexer.nextSymbol(); sym.token !== Token.EOF; sym = lexer.nextSymbol()) {
       if (sym.token === Token.ILLEGAL) {
-        const { start } = sym;
-        throw new Error(`illegal token at ${start.line}:${start.column}`);
+        const { start } = sym
+        throw new Error(`illegal token at ${start.line}:${start.column}`)
       }
-      items.push(sym);
+      items.push(sym)
     }
 
     const expected = [
@@ -413,21 +419,21 @@ describe('Lexer', () => {
         start: { line: 1, column: 31 },
         end: { line: 1, column: 37 },
       },
-    ];
-    expect(items).toEqual(expected);
-  });
+    ]
+    expect(items).toEqual(expected)
+  })
 
   it('should recognize string literals', () => {
-    const input = '"foo" "ba\\"r" "\\x00" "\\u0000"';
-    const items: unknown[] = [];
+    const input = '"foo" "ba\\"r" "\\x00" "\\u0000"'
+    const items: unknown[] = []
 
-    const lexer = new Lexer(input);
+    const lexer = new Lexer(input)
     for (let sym = lexer.nextSymbol(); sym.token !== Token.EOF; sym = lexer.nextSymbol()) {
       if (sym.token === Token.ILLEGAL) {
-        const { start } = sym;
-        throw new Error(`illegal token at ${start.line}:${start.column}`);
+        const { start } = sym
+        throw new Error(`illegal token at ${start.line}:${start.column}`)
       }
-      items.push(sym);
+      items.push(sym)
     }
 
     const expected = [
@@ -455,21 +461,21 @@ describe('Lexer', () => {
         start: { line: 1, column: 22 },
         end: { line: 1, column: 30 },
       },
-    ];
-    expect(items).toEqual(expected);
-  });
+    ]
+    expect(items).toEqual(expected)
+  })
 
   describe('error tokens', () => {
     it('should return error token when string literal across multi lines', () => {
-      const input = '\n"123\n123"';
+      const input = '\n"123\n123"'
 
-      const lexer = new Lexer(input);
+      const lexer = new Lexer(input)
       expect(lexer.nextSymbol()).toEqual({
         token: Token.ILLEGAL,
         literal: '',
         start: { line: 2, column: 1 },
         end: { line: 2, column: 1 },
-      });
-    });
-  });
-});
+      })
+    })
+  })
+})

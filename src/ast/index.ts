@@ -1,48 +1,50 @@
-import { LexerSymbol } from 'src/lexer';
+import { LexerSymbol } from 'src/lexer'
 
-export class Program {
-  body: Statement[] = [];
+export interface ASTNode {}
+
+export class Program implements ASTNode {
+  body: Statement[] = []
 }
 
-export abstract class Statement {}
+export abstract class Statement implements ASTNode {}
 
 export class BlockStatement extends Statement {
-  statements: Statement[] = [];
+  statements: Statement[] = []
 }
 
 export class EmptyStatement extends Statement {}
 
 export class ExpressionStatement extends Statement {
-  expressions: Expression[] = [];
+  expression!: Expression
 }
 
 export class LetStatement extends Statement {
-  identifier: LexerSymbol | null = null;
-  value: Expression | null = null;
+  identifier!: LexerSymbol
+  value!: Expression
 }
 
 export class FuncDeclarationStatement extends Statement {
-  identifier: LexerSymbol | null = null;
-  parameters: LexerSymbol[] = [];
-  body: BlockStatement | null = null;
+  identifier!: LexerSymbol
+  parameters: LexerSymbol[] = []
+  body!: BlockStatement
 }
 
 export class IfStatement extends Statement {
-  condition: Expression | null = null;
-  trueBranch: Statement | null = null;
-  falseBranch: Statement | null = null;
+  condition!: Expression
+  consequence!: Statement
+  alternative: Statement | null = null
 }
 
 export class ForStatement extends Statement {
-  initialize: Expression | null = null;
-  condition: Expression | null = null;
-  afterEach: Expression | null = null;
-  body: Statement | null = null;
+  initialize: Expression | null = null
+  condition: Expression | null = null
+  afterEach: Expression | null = null
+  body!: Statement
 }
 
 export class WhileStatement extends Statement {
-  condition: Expression | null = null;
-  body: Statement | null = null;
+  condition!: Expression
+  body!: Statement
 }
 
 export class ContinueStatement extends Statement {}
@@ -50,37 +52,37 @@ export class ContinueStatement extends Statement {}
 export class BreakStatement extends Statement {}
 
 export class ReturnStatement extends Statement {
-  returnValue: Expression | null = null;
+  returnValue: Expression | null = null
 }
 
-export abstract class Expression {}
+export abstract class Expression implements ASTNode {}
 
 export class PrefixExpression extends Expression {
-  operator: LexerSymbol | null = null;
-  operand: Expression | null = null;
+  operator!: LexerSymbol
+  operand!: Expression
 }
 
 export class InfixExpression extends Expression {
-  operator: LexerSymbol | null = null;
-  leftOperand: Expression | null = null;
-  rightOperand: Expression | null = null;
+  operator!: LexerSymbol
+  leftOperand!: Expression
+  rightOperand!: Expression
 }
 
 export class CallExpression extends Expression {
-  callable: Expression | null = null;
-  arguments: Expression[] = [];
+  callable!: Expression
+  arguments: Expression[] = []
 }
 
 export class LiteralExpression extends Expression {
-  symbol: LexerSymbol | null = null;
-  value: unknown;
+  symbol!: LexerSymbol
+  value: unknown
 }
 
 export class IdentifierExpression extends Expression {
-  symbol: LexerSymbol | null = null;
+  symbol!: LexerSymbol
 }
 
 export class FunctionExpression extends Expression {
-  parameters: LexerSymbol[] = [];
-  body: BlockStatement | null = null;
+  parameters: LexerSymbol[] = []
+  body!: BlockStatement
 }

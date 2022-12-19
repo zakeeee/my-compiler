@@ -10,50 +10,51 @@ export enum Token {
   STRING_LITERAL,
 
   // keywords
-  LET,
-  TRUE,
-  FALSE,
-  NULL,
-  FUNC,
-  IF,
-  ELSE,
-  FOR,
-  WHILE,
-  BREAK,
-  CONTINUE,
-  RETURN,
+  LET, // let
+  TRUE, // true
+  FALSE, // false
+  NULL, // null
+  FUNC, // func
+  IF, // if
+  ELSE, // else
+  FOR, // for
+  WHILE, // while
+  BREAK, // break
+  CONTINUE, // continue
+  RETURN, // return
 
   // operators and punctuations
-  ASSIGN,
-  PLUS,
-  MINUS,
-  ASTERISK,
-  SLASH,
-  PERCENT,
-  EQUALS,
-  NOT,
-  NOT_EQUALS,
-  GREATER_THAN,
-  GREATER_EQUAL_THAN,
-  LESS_THAN,
-  LESS_EQUAL_THAN,
-  BIT_AND,
-  BIT_OR,
-  BIT_XOR,
-  BIT_NOT,
-  LOGIC_AND,
-  LOGIC_OR,
-  COMMA,
-  SEMICOLON,
-  DOT,
-  COLON,
-  QUESTION_MARK,
-  L_PAREN,
-  R_PAREN,
-  L_BRACE,
-  R_BRACE,
-  L_BRACKET,
-  R_BRACKET,
+  ASSIGN, // =
+  PLUS, // +
+  MINUS, // -
+  ASTERISK, // *
+  SLASH, // /
+  BACK_SLASH, // \
+  PERCENT, // %
+  EQUAL, // ==
+  NOT, // !
+  NOT_EQUAL, // !=
+  GREATER_THAN, // >
+  GREATER_THAN_EQUAL, // >=
+  LESS_THAN, // <
+  LESS_THAN_EQUAL, // <=
+  BIT_AND, // &
+  BIT_OR, // |
+  BIT_XOR, // ^
+  BIT_NOT, // ~
+  LOGIC_AND, // &&
+  LOGIC_OR, // ||
+  COMMA, // ,
+  SEMICOLON, // ;
+  DOT, // .
+  COLON, // :
+  QUESTION_MARK, // ?
+  L_PAREN, // (
+  R_PAREN, // )
+  L_BRACE, // {
+  R_BRACE, // }
+  L_BRACKET, // [
+  R_BRACKET, // ]
 }
 
 const tokenNameMap = Object.freeze({
@@ -86,14 +87,15 @@ const tokenNameMap = Object.freeze({
   [Token.MINUS]: '-',
   [Token.ASTERISK]: '*',
   [Token.SLASH]: '/',
+  [Token.BACK_SLASH]: '\\',
   [Token.PERCENT]: '%',
-  [Token.EQUALS]: '==',
+  [Token.EQUAL]: '==',
   [Token.NOT]: '!',
-  [Token.NOT_EQUALS]: '!=',
+  [Token.NOT_EQUAL]: '!=',
   [Token.GREATER_THAN]: '>',
-  [Token.GREATER_EQUAL_THAN]: '>=',
+  [Token.GREATER_THAN_EQUAL]: '>=',
   [Token.LESS_THAN]: '<',
-  [Token.LESS_EQUAL_THAN]: '<=',
+  [Token.LESS_THAN_EQUAL]: '<=',
   [Token.BIT_AND]: '&',
   [Token.BIT_OR]: '|',
   [Token.BIT_XOR]: '^',
@@ -111,10 +113,10 @@ const tokenNameMap = Object.freeze({
   [Token.R_BRACE]: '}',
   [Token.L_BRACKET]: '[',
   [Token.R_BRACKET]: ']',
-});
+})
 
 export function getTokenName(token: Token): string {
-  return tokenNameMap[token];
+  return tokenNameMap[token]
 }
 
 const keywordTokenMap = Object.freeze({
@@ -130,12 +132,12 @@ const keywordTokenMap = Object.freeze({
   break: Token.BREAK,
   continue: Token.CONTINUE,
   return: Token.RETURN,
-});
+})
 
 export function isKeyword(word: string): word is keyof typeof keywordTokenMap {
-  return keywordTokenMap.hasOwnProperty(word);
+  return keywordTokenMap.hasOwnProperty(word)
 }
 
 export function getKeywordToken<T extends keyof typeof keywordTokenMap>(keyword: T): Token {
-  return keywordTokenMap[keyword];
+  return keywordTokenMap[keyword]
 }

@@ -1,19 +1,21 @@
-import PopNumber from './models/number';
-import { PopObject } from './models/object';
-import PopString from './models/string';
+import PopStringImpl from './models/impl/string'
+import { PopNumber, PopObject, PopString } from './models/types'
 
 export function len(object: PopObject): PopNumber {
-  if ('$length' in object && typeof object['$length'] === 'function') {
-    const length = object['$length']();
-    return new PopNumber(length);
+  if ('$length' in object && typeof object.$length === 'function') {
+    return object.$length()
   }
-  throw new Error(`cannot perform len operation on ${object.$type()}`);
+  throw new Error(`cannot perform len operation on ${object.$type()}`)
 }
 
 export function type(object: PopObject): PopString {
-  return new PopString(object.$type());
+  return new PopStringImpl(object.$type())
 }
 
 export function str(object: PopObject): PopString {
-  return new PopString(object.$toString());
+  return object.$toString()
+}
+
+export function print(...objects: PopObject[]): void {
+  console.log(...objects.map((o) => o.$toString().$unwrap()))
 }

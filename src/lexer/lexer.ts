@@ -1,257 +1,266 @@
-import { getKeywordToken, isKeyword, Token } from './token';
-import { kleeneClosure, regExpAlternation, regExpConcatenation } from './utils';
+import { getKeywordToken, isKeyword, Token } from './token'
+import { kleeneClosure, regExpAlternation, regExpConcatenation } from './utils'
 
-const identifierRE = /^[A-Za-z][A-Za-z0-9]*/;
+const identifierRE = /^[A-Za-z][A-Za-z0-9]*/
 
 // Lexer 不处理数字的正负号，都认为是 Tokens.MINUS，丢给语法分析处理
-const numberLiteralRE = /^(0|[1-9]\d*)(\.\d+)?([eE][+-]?\d+)?/;
+const numberLiteralRE = /^(0|[1-9]\d*)(\.\d+)?([eE][+-]?\d+)?/
 
-const characterEscapeSequence = regExpAlternation(/["\\bfnrtv]/, /[^"\\bfnrtv0-9xu\r\n]/);
-const hexEscapeSequence = /x[0-9a-fA-F]{2}/;
-const unicodeEscapeSequence = /u[0-9a-fA-F]{4}/;
+const characterEscapeSequence = regExpAlternation(/["\\bfnrtv]/, /[^"\\bfnrtv0-9xu\r\n]/)
+const hexEscapeSequence = /x[0-9a-fA-F]{2}/
+const unicodeEscapeSequence = /u[0-9a-fA-F]{4}/
 const escapeSequence = regExpAlternation(
   characterEscapeSequence,
   hexEscapeSequence,
   unicodeEscapeSequence
-);
-const stringCharacter = regExpAlternation(/[^"\\\r\n]/, regExpConcatenation(/\\/, escapeSequence));
-const stringLiteralRE = regExpConcatenation(/^"/, kleeneClosure(stringCharacter), /"/);
+)
+const stringCharacter = regExpAlternation(/[^"\\\r\n]/, regExpConcatenation(/\\/, escapeSequence))
+const stringLiteralRE = regExpConcatenation(/^"/, kleeneClosure(stringCharacter), /"/)
 
 type Position = {
-  line: number;
-  column: number;
-};
+  line: number
+  column: number
+}
 
 export type LexerSymbol = {
-  token: Token;
-  literal: string;
-  start: Position;
-  end: Position;
-};
+  token: Token
+  literal: string
+  start: Position
+  end: Position
+}
 
-export const createLexerSymbol = (token: Token, literal: string, start: Position, end: Position) => ({
+export const createLexerSymbol = (
+  token: Token,
+  literal: string,
+  start: Position,
+  end: Position
+) => ({
   token,
   literal,
   start,
   end,
-});
+})
 
 export default class Lexer {
-  private offset = 0;
-  private line = 1;
-  private lineOffset = 0; // 当前行起始 offset
+  private offset = 0
+  private line = 1
+  private lineOffset = 0 // 当前行起始 offset
 
   constructor(private source: string) {}
 
   nextSymbol(): LexerSymbol {
-    this.skipWhitespace();
+    this.skipWhitespace()
 
-    const { source } = this;
-    const startPos = this.getPos();
+    const { source } = this
+    const startPos = this.getPos()
 
     if (this.offset === source.length) {
-      return createLexerSymbol(Token.EOF, '', startPos, startPos);
+      return createLexerSymbol(Token.EOF, '', startPos, startPos)
     }
 
-    const ch = source[this.offset];
+    const ch = source[this.offset]
     switch (ch) {
       case ',': {
-        this.offset++;
-        return createLexerSymbol(Token.COMMA, ch, startPos, this.getPos());
+        this.offset++
+        return createLexerSymbol(Token.COMMA, ch, startPos, this.getPos())
       }
       case ';': {
-        this.offset++;
-        return createLexerSymbol(Token.SEMICOLON, ch, startPos, this.getPos());
+        this.offset++
+        return createLexerSymbol(Token.SEMICOLON, ch, startPos, this.getPos())
       }
       case '.': {
-        this.offset++;
-        return createLexerSymbol(Token.DOT, ch, startPos, this.getPos());
+        this.offset++
+        return createLexerSymbol(Token.DOT, ch, startPos, this.getPos())
       }
       case ':': {
-        this.offset++;
-        return createLexerSymbol(Token.COLON, ch, startPos, this.getPos());
+        this.offset++
+        return createLexerSymbol(Token.COLON, ch, startPos, this.getPos())
       }
       case '?': {
-        this.offset++;
-        return createLexerSymbol(Token.QUESTION_MARK, ch, startPos, this.getPos());
+        this.offset++
+        return createLexerSymbol(Token.QUESTION_MARK, ch, startPos, this.getPos())
       }
       case '(': {
-        this.offset++;
-        return createLexerSymbol(Token.L_PAREN, ch, startPos, this.getPos());
+        this.offset++
+        return createLexerSymbol(Token.L_PAREN, ch, startPos, this.getPos())
       }
       case ')': {
-        this.offset++;
-        return createLexerSymbol(Token.R_PAREN, ch, startPos, this.getPos());
+        this.offset++
+        return createLexerSymbol(Token.R_PAREN, ch, startPos, this.getPos())
       }
       case '{': {
-        this.offset++;
-        return createLexerSymbol(Token.L_BRACE, ch, startPos, this.getPos());
+        this.offset++
+        return createLexerSymbol(Token.L_BRACE, ch, startPos, this.getPos())
       }
       case '}': {
-        this.offset++;
-        return createLexerSymbol(Token.R_BRACE, ch, startPos, this.getPos());
+        this.offset++
+        return createLexerSymbol(Token.R_BRACE, ch, startPos, this.getPos())
       }
       case '[': {
-        this.offset++;
-        return createLexerSymbol(Token.L_BRACKET, ch, startPos, this.getPos());
+        this.offset++
+        return createLexerSymbol(Token.L_BRACKET, ch, startPos, this.getPos())
       }
       case ']': {
-        this.offset++;
-        return createLexerSymbol(Token.R_BRACKET, ch, startPos, this.getPos());
+        this.offset++
+        return createLexerSymbol(Token.R_BRACKET, ch, startPos, this.getPos())
       }
       case '<': {
-        this.offset++;
+        this.offset++
         if (this.offset < source.length && source[this.offset] === '=') {
-          this.offset++;
-          return createLexerSymbol(Token.LESS_EQUAL_THAN, '<=', startPos, this.getPos());
+          this.offset++
+          return createLexerSymbol(Token.LESS_THAN_EQUAL, '<=', startPos, this.getPos())
         }
-        return createLexerSymbol(Token.LESS_THAN, ch, startPos, this.getPos());
+        return createLexerSymbol(Token.LESS_THAN, ch, startPos, this.getPos())
       }
       case '>': {
-        this.offset++;
+        this.offset++
         if (this.offset < source.length && source[this.offset] === '=') {
-          this.offset++;
-          return createLexerSymbol(Token.GREATER_EQUAL_THAN, '>=', startPos, this.getPos());
+          this.offset++
+          return createLexerSymbol(Token.GREATER_THAN_EQUAL, '>=', startPos, this.getPos())
         }
-        return createLexerSymbol(Token.GREATER_THAN, ch, startPos, this.getPos());
+        return createLexerSymbol(Token.GREATER_THAN, ch, startPos, this.getPos())
       }
       case '+': {
-        this.offset++;
-        return createLexerSymbol(Token.PLUS, ch, startPos, this.getPos());
+        this.offset++
+        return createLexerSymbol(Token.PLUS, ch, startPos, this.getPos())
       }
       case '-': {
-        this.offset++;
-        return createLexerSymbol(Token.MINUS, ch, startPos, this.getPos());
+        this.offset++
+        return createLexerSymbol(Token.MINUS, ch, startPos, this.getPos())
       }
       case '*': {
-        this.offset++;
-        return createLexerSymbol(Token.ASTERISK, ch, startPos, this.getPos());
+        this.offset++
+        return createLexerSymbol(Token.ASTERISK, ch, startPos, this.getPos())
       }
       case '/': {
-        this.offset++;
-        return createLexerSymbol(Token.SLASH, ch, startPos, this.getPos());
+        this.offset++
+        return createLexerSymbol(Token.SLASH, ch, startPos, this.getPos())
+      }
+      case '\\': {
+        this.offset++
+        return createLexerSymbol(Token.BACK_SLASH, ch, startPos, this.getPos())
       }
       case '%': {
-        this.offset++;
-        return createLexerSymbol(Token.PERCENT, ch, startPos, this.getPos());
+        this.offset++
+        return createLexerSymbol(Token.PERCENT, ch, startPos, this.getPos())
       }
       case '=': {
-        this.offset++;
+        this.offset++
         if (this.offset < source.length && source[this.offset] === '=') {
-          this.offset++;
-          return createLexerSymbol(Token.EQUALS, '==', startPos, this.getPos());
+          this.offset++
+          return createLexerSymbol(Token.EQUAL, '==', startPos, this.getPos())
         }
-        return createLexerSymbol(Token.ASSIGN, ch, startPos, this.getPos());
+        return createLexerSymbol(Token.ASSIGN, ch, startPos, this.getPos())
       }
       case '!': {
-        this.offset++;
+        this.offset++
         if (this.offset < source.length && source[this.offset] === '=') {
-          this.offset++;
-          return createLexerSymbol(Token.NOT_EQUALS, '!=', startPos, this.getPos());
+          this.offset++
+          return createLexerSymbol(Token.NOT_EQUAL, '!=', startPos, this.getPos())
         }
-        return createLexerSymbol(Token.NOT, ch, startPos, this.getPos());
+        return createLexerSymbol(Token.NOT, ch, startPos, this.getPos())
       }
       case '&': {
-        this.offset++;
+        this.offset++
         if (this.offset < source.length && source[this.offset] === '&') {
-          this.offset++;
-          return createLexerSymbol(Token.LOGIC_AND, '&&', startPos, this.getPos());
+          this.offset++
+          return createLexerSymbol(Token.LOGIC_AND, '&&', startPos, this.getPos())
         }
-        return createLexerSymbol(Token.BIT_AND, ch, startPos, this.getPos());
+        return createLexerSymbol(Token.BIT_AND, ch, startPos, this.getPos())
       }
       case '|': {
-        this.offset++;
+        this.offset++
         if (this.offset < source.length && source[this.offset] === '|') {
-          this.offset++;
-          return createLexerSymbol(Token.LOGIC_OR, '||', startPos, this.getPos());
+          this.offset++
+          return createLexerSymbol(Token.LOGIC_OR, '||', startPos, this.getPos())
         }
-        return createLexerSymbol(Token.BIT_OR, ch, startPos, this.getPos());
+        return createLexerSymbol(Token.BIT_OR, ch, startPos, this.getPos())
       }
       case '^': {
-        this.offset++;
-        return createLexerSymbol(Token.BIT_XOR, ch, startPos, this.getPos());
+        this.offset++
+        return createLexerSymbol(Token.BIT_XOR, ch, startPos, this.getPos())
       }
       case '~': {
-        this.offset++;
-        return createLexerSymbol(Token.BIT_NOT, ch, startPos, this.getPos());
+        this.offset++
+        return createLexerSymbol(Token.BIT_NOT, ch, startPos, this.getPos())
       }
       case '"': {
-        const res = this.nextStringLiteral();
+        const res = this.nextStringLiteral()
         if (res) {
-          const [token, literal] = res;
-          return createLexerSymbol(token, literal, startPos, this.getPos());
+          const [token, literal] = res
+          return createLexerSymbol(token, literal, startPos, this.getPos())
         }
       }
       default: {
-        const res = this.nextNumberLiteral() || this.nextKeywordOrIdentifier();
+        const res = this.nextNumberLiteral() || this.nextKeywordOrIdentifier()
         if (res) {
-          const [token, literal] = res;
-          return createLexerSymbol(token, literal, startPos, this.getPos());
+          const [token, literal] = res
+          return createLexerSymbol(token, literal, startPos, this.getPos())
         }
       }
     }
 
     // 无法识别的 token
-    return createLexerSymbol(Token.ILLEGAL, '', startPos, startPos);
+    return createLexerSymbol(Token.ILLEGAL, '', startPos, startPos)
   }
 
   private getPos(): Position {
-    const { line, offset, lineOffset } = this;
+    const { line, offset, lineOffset } = this
     return {
       line,
       column: offset - lineOffset + 1,
-    };
+    }
   }
 
   private skipWhitespace() {
-    const { source } = this;
+    const { source } = this
     while (this.offset < source.length) {
-      const ch = source[this.offset];
+      const ch = source[this.offset]
       if ([' ', '\t', '\r', '\n'].includes(ch)) {
-        this.offset++;
+        this.offset++
         if (ch === '\n') {
-          this.lineOffset = this.offset;
-          this.line++;
+          this.lineOffset = this.offset
+          this.line++
         }
       } else {
-        break;
+        break
       }
     }
   }
 
   private nextStringLiteral(): readonly [Token, string] | null {
-    const { source, offset: start } = this;
-    const arr = new RegExp(stringLiteralRE).exec(source.slice(start));
+    const { source, offset: start } = this
+    const arr = new RegExp(stringLiteralRE).exec(source.slice(start))
     if (!arr) {
-      return null;
+      return null
     }
-    const literal = arr[0];
-    this.offset = start + literal.length;
-    return [Token.STRING_LITERAL, literal];
+    const literal = arr[0]
+    this.offset = start + literal.length
+    return [Token.STRING_LITERAL, literal]
   }
 
   private nextNumberLiteral(): readonly [Token, string] | null {
-    const { source, offset: start } = this;
-    const arr = new RegExp(numberLiteralRE).exec(source.slice(start));
+    const { source, offset: start } = this
+    const arr = new RegExp(numberLiteralRE).exec(source.slice(start))
     if (!arr) {
-      return null;
+      return null
     }
-    const literal = arr[0];
-    this.offset = start + literal.length;
-    return [Token.NUMBER_LITERAL, literal];
+    const literal = arr[0]
+    this.offset = start + literal.length
+    return [Token.NUMBER_LITERAL, literal]
   }
 
   private nextKeywordOrIdentifier(): readonly [Token, string] | null {
-    const { source, offset: start } = this;
-    const arr = new RegExp(identifierRE).exec(source.slice(start));
+    const { source, offset: start } = this
+    const arr = new RegExp(identifierRE).exec(source.slice(start))
     if (!arr) {
-      return null;
+      return null
     }
-    const literal = arr[0];
-    this.offset = start + literal.length;
+    const literal = arr[0]
+    this.offset = start + literal.length
     if (isKeyword(literal)) {
-      return [getKeywordToken(literal), literal];
+      return [getKeywordToken(literal), literal]
     }
-    return [Token.IDENTIFIER, literal];
+    return [Token.IDENTIFIER, literal]
   }
 }
