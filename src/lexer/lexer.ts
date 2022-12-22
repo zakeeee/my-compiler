@@ -190,6 +190,7 @@ export default class Lexer {
           const [token, literal] = res
           return createLexerSymbol(token, literal, startPos, this.getPos())
         }
+        break
       }
       default: {
         const res = this.nextNumberLiteral() || this.nextKeywordOrIdentifier()

@@ -4,18 +4,30 @@ import { describe, test } from 'vitest'
 import { evalProgram } from './evaluate'
 import { Scope } from './scope'
 
-describe('Builtins', () => {
-  test('', () => {
+describe('Evaluate', () => {
+  test('foo', () => {
+    // const input = `\
+    // let i = 0;
+    // while (i < 10) {
+    //   i = i + 1;
+    //   if (i % 2 != 0) {
+    //     continue;
+    //   }
+    //   print(i);
+    // }
+    //     `
     const input = `\
-func add(a, b) {
-  return a + b;
-}
-return add("1", "2");
-    `
+    func fib(n) {
+      if (n == 1) return 1;
+      if (n == 2) return 1;
+      return fib(n - 1) + fib(n - 2);
+    }
+    print(fib(10));
+        `
     const lexer = new Lexer(input)
     const parser = new Parser(lexer)
     const prog = parser.parseProgram()
     const scope = new Scope()
-    console.log(evalProgram(prog, scope))
+    evalProgram(prog, scope)
   })
 })

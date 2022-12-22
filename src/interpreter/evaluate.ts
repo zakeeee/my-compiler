@@ -22,6 +22,7 @@ import {
 } from 'src/ast'
 import { getTokenName, Token } from 'src/lexer'
 import PopBooleanImpl from './models/impl/boolean'
+import { builtinFunctions, PopBuiltinFunctionImpl } from './models/impl/builtins'
 import PopFunctionImpl from './models/impl/function'
 import PopNullImpl from './models/impl/null'
 import PopNumberImpl from './models/impl/number'
@@ -29,18 +30,33 @@ import PopStringImpl from './models/impl/string'
 import { PopFunction, PopObject } from './models/types'
 import { Scope } from './scope'
 
-export function evalProgram(node: Program, scope: Scope): PopObject {
-  let ret: PopObject = PopNullImpl.NULL
-  for (const stmt of node.body) {
-    ret = evalStatement(stmt, scope)
-    if (stmt instanceof ReturnStatement) {
-      break
-    }
-  }
-  return ret
+class ContinueStatementEvalResult {}
+
+class BreakStatementEvalResult {}
+
+class ReturnStatementEvalResult {
+  constructor(readonly returnValue: PopObject) {}
 }
 
-function evalStatement(stmt: Statement, scope: Scope): PopObject {
+export function evalProgram(node: Program, scope: Scope): void {
+  for (const stmt of node.body) {
+    const res = evalStatement(stmt, scope)
+    if (res instanceof ContinueStatementEvalResult) {
+      throw new Error('continue outside of loop')
+    }
+    if (res instanceof BreakStatementEvalResult) {
+      throw new Error('break outside of loop')
+    }
+    if (res instanceof ReturnStatementEvalResult) {
+      throw new Error('return outside of function')
+    }
+  }
+}
+
+function evalStatement(
+  stmt: Statement,
+  scope: Scope
+): PopObject | ContinueStatementEvalResult | BreakStatementEvalResult | ReturnStatementEvalResult {
   if (stmt instanceof EmptyStatement) {
     return PopNullImpl.NULL
   }
@@ -77,11 +93,18 @@ function evalStatement(stmt: Statement, scope: Scope): PopObject {
   throw new Error('unsupported statement type')
 }
 
-function evalBlockStatement(stmt: BlockStatement, scope: Scope): PopObject {
+function evalBlockStatement(
+  stmt: BlockStatement,
+  scope: Scope
+): PopObject | ContinueStatementEvalResult | BreakStatementEvalResult | ReturnStatementEvalResult {
   const blockScope = new Scope(scope)
   for (const childStmt of stmt.statements) {
     const res = evalStatement(childStmt, blockScope)
-    if (childStmt instanceof ReturnStatement) {
+    if (
+      res instanceof ContinueStatementEvalResult ||
+      res instanceof BreakStatementEvalResult ||
+      res instanceof ReturnStatementEvalResult
+    ) {
       return res
     }
   }
@@ -108,17 +131,20 @@ function evalFuncDeclarationStatement(stmt: FuncDeclarationStatement, scope: Sco
   return PopNullImpl.NULL
 }
 
-function evalIfStatement(stmt: IfStatement, scope: Scope): PopObject {
+function evalIfStatement(
+  stmt: IfStatement,
+  scope: Scope
+): PopObject | ContinueStatementEvalResult | BreakStatementEvalResult | ReturnStatementEvalResult {
   const condition = evalExpression(stmt.condition, scope)
   if (condition.$toBoolean().$unwrap()) {
-    evalStatement(stmt.consequence, scope)
+    return evalStatement(stmt.consequence, scope)
   } else if (stmt.alternative) {
-    evalStatement(stmt.alternative, scope)
+    return evalStatement(stmt.alternative, scope)
   }
   return PopNullImpl.NULL
 }
 
-function evalForStatement(stmt: ForStatement, scope: Scope): PopObject {
+function evalForStatement(stmt: ForStatement, scope: Scope): PopObject | ReturnStatementEvalResult {
   const {
     initialize: initializeExpr,
     condition: conditionExpr,
@@ -130,8 +156,13 @@ function evalForStatement(stmt: ForStatement, scope: Scope): PopObject {
   }
   let condition = conditionExpr ? evalExpression(conditionExpr, scope).$toBoolean().$unwrap() : true
   while (condition) {
-    // TODO break, continue, return
-    evalStatement(bodyStatement, scope)
+    const res = evalStatement(bodyStatement, scope)
+    if (res instanceof BreakStatementEvalResult) {
+      break
+    }
+    if (res instanceof ReturnStatementEvalResult) {
+      return res
+    }
     if (afterEachExpr) {
       evalExpression(afterEachExpr, scope)
     }
@@ -140,30 +171,37 @@ function evalForStatement(stmt: ForStatement, scope: Scope): PopObject {
   return PopNullImpl.NULL
 }
 
-function evalWhileStatement(stmt: WhileStatement, scope: Scope): PopObject {
+function evalWhileStatement(
+  stmt: WhileStatement,
+  scope: Scope
+): PopObject | ReturnStatementEvalResult {
   const { condition: conditionExpr, body: bodyStatement } = stmt
   let condition = conditionExpr ? evalExpression(conditionExpr, scope).$toBoolean().$unwrap() : true
   while (condition) {
-    // TODO break, continue, return
-    evalStatement(bodyStatement, scope)
+    const res = evalStatement(bodyStatement, scope)
+    if (res instanceof BreakStatementEvalResult) {
+      break
+    }
+    if (res instanceof ReturnStatementEvalResult) {
+      return res
+    }
     condition = conditionExpr ? evalExpression(conditionExpr, scope).$toBoolean().$unwrap() : true
   }
   return PopNullImpl.NULL
 }
 
-function evalContinueStatement(stmt: ContinueStatement, scope: Scope): PopObject {
-  return PopNullImpl.NULL
+function evalContinueStatement(stmt: ContinueStatement, scope: Scope): ContinueStatementEvalResult {
+  return new ContinueStatementEvalResult()
 }
 
-function evalBreakStatement(stmt: BreakStatement, scope: Scope): PopObject {
-  return PopNullImpl.NULL
+function evalBreakStatement(stmt: BreakStatement, scope: Scope): BreakStatementEvalResult {
+  return new BreakStatementEvalResult()
 }
 
-function evalReturnStatement(stmt: ReturnStatement, scope: Scope): PopObject {
-  if (!stmt.returnValue) {
-    return PopNullImpl.NULL
-  }
-  return evalExpression(stmt.returnValue, scope)
+function evalReturnStatement(stmt: ReturnStatement, scope: Scope): ReturnStatementEvalResult {
+  return new ReturnStatementEvalResult(
+    stmt.returnValue ? evalExpression(stmt.returnValue, scope) : PopNullImpl.NULL
+  )
 }
 
 function evalExpression(expr: Expression, scope: Scope): PopObject {
@@ -277,23 +315,36 @@ function evalInfixExpression(expr: InfixExpression, scope: Scope): PopObject {
 
 function evalCallExpression(expr: CallExpression, scope: Scope): PopObject {
   const func = evalExpression(expr.callable!, scope)
-  if (func instanceof PopFunctionImpl) {
-    const args: PopObject[] = []
-    for (const argument of expr.arguments) {
-      args.push(evalExpression(argument, scope))
-    }
-    if (args.length !== func.parameters.length) {
-      throw new Error(
-        `${func.identifier} requires ${func.parameters.length} arguments but ${args.length} is given`
-      )
-    }
-    const funcScope = new Scope(scope)
-    func.parameters.forEach((paramName, idx) => {
-      funcScope.setValue(paramName, args[idx])
-    })
-    return evalBlockStatement(func.body, funcScope)
+  if (!(func instanceof PopFunctionImpl || func instanceof PopBuiltinFunctionImpl)) {
+    throw new Error('object is not callable')
   }
-  throw new Error('object is not callable')
+
+  const args = expr.arguments.map((arg) => evalExpression(arg, scope))
+  if (args.length < func.$parameters.length) {
+    throw new Error(
+      `${func.$name} requires at least ${func.$parameters.length} arguments but ${args.length} is given`
+    )
+  }
+
+  if (func instanceof PopBuiltinFunctionImpl) {
+    return func.$call(args)
+  }
+
+  const funcScope = new Scope(scope)
+  func.$parameters.forEach((paramName, idx) => {
+    funcScope.setValue(paramName, args[idx])
+  })
+  const res = evalStatement(func.body, funcScope)
+  if (res instanceof ContinueStatementEvalResult) {
+    throw new Error('continue outside of loop')
+  }
+  if (res instanceof BreakStatementEvalResult) {
+    throw new Error('break outside of loop')
+  }
+  if (res instanceof ReturnStatementEvalResult) {
+    return res.returnValue
+  }
+  return PopNullImpl.NULL
 }
 
 function evalLiteralExpression(expr: LiteralExpression, scope: Scope): PopObject {
@@ -317,10 +368,15 @@ function evalLiteralExpression(expr: LiteralExpression, scope: Scope): PopObject
 function evalIdentifierExpression(expr: IdentifierExpression, scope: Scope): PopObject {
   const name = expr.symbol.literal
   const obj = scope.getValue(name)
-  if (!obj) {
-    throw new Error(`${name} is not defined`)
+  if (obj) {
+    return obj
   }
-  return obj
+
+  if (name in builtinFunctions) {
+    return builtinFunctions[name as keyof typeof builtinFunctions]
+  }
+
+  throw new Error(`${name} is not defined`)
 }
 
 function evalFunctionExpression(expr: FunctionExpression, scope: Scope): PopFunction {

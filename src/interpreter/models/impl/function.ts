@@ -5,10 +5,18 @@ import PopStringImpl from './string'
 
 export default class PopFunctionImpl implements PopFunction {
   constructor(
-    readonly parameters: string[],
+    private parameters: string[],
     readonly body: BlockStatement,
-    readonly identifier?: string
+    private identifier?: string
   ) {}
+
+  get $name(): string {
+    return this.identifier ?? 'anonymous'
+  }
+
+  get $parameters(): string[] {
+    return [...this.parameters]
+  }
 
   $equal(other: PopObject): PopBoolean {
     return this === other ? PopBooleanImpl.TRUE : PopBooleanImpl.FALSE
@@ -19,7 +27,7 @@ export default class PopFunctionImpl implements PopFunction {
   }
 
   $toString(): PopString {
-    return new PopStringImpl(`<Function ${this.identifier ?? 'anonymous'}>`)
+    return new PopStringImpl(`<Function ${this.$name}>`)
   }
 
   $type(): ObjectType {

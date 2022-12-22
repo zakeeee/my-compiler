@@ -7,7 +7,7 @@ describe('PopFunction', () => {
 
   test('$toString', () => {})
 
-  test('$call', () => {})
-
   test('$type', () => {})
+
+  test('$call', () => {})
 })

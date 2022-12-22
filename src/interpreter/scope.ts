@@ -2,7 +2,7 @@ import { PopObject } from './models/types'
 
 export class Scope {
   private map = new Map<string, PopObject>()
-  private outer: Scope | null
+  private readonly outer: Scope | null
 
   constructor(outer?: Scope) {
     this.outer = outer || null

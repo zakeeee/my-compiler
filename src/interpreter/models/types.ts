@@ -5,6 +5,7 @@ export enum ObjectType {
   BOOLEAN = 'BOOLEAN',
   STRING = 'STRING',
   FUNCTION = 'FUNCTION',
+  BUILTIN_FUNCTION = 'BUILTIN_FUNCTION',
 }
 
 export interface Wrapper<T> {
@@ -36,7 +37,14 @@ export interface PopBoolean extends PopObject, Wrapper<boolean> {
   $not(): PopBoolean
 }
 
-export interface PopFunction extends PopObject {}
+export interface PopFunction extends PopObject {
+  $name: string
+  $parameters: string[]
+}
+
+export interface PopBuiltinFunction extends PopFunction {
+  $call(args: PopObject[]): PopObject
+}
 
 export interface PopNull extends PopObject, Wrapper<null> {}
 
