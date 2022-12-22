@@ -18,7 +18,7 @@ import {
   Program,
   ReturnStatement,
   Statement,
-  WhileStatement
+  WhileStatement,
 } from 'src/ast'
 import { getTokenName, Token } from 'src/lexer'
 import { C_FALSE, C_TRUE } from './models/impl/boolean'
@@ -111,16 +111,22 @@ function evalExpressionStatement(stmt: ExpressionStatement, scope: Scope): PopOb
 
 function evalLetStatement(stmt: LetStatement, scope: Scope): PopObject {
   const name = stmt.identifier.literal
+  if (scope.hasOwnValue(name)) {
+    throw new Error(`duplicate variable "${name}"`)
+  }
   const value = evalExpression(stmt.value, scope)
-  scope.setValue(name, value)
+  scope.setOwnValue(name, value)
   return C_NULL
 }
 
 function evalFuncDeclarationStatement(stmt: FuncDeclarationStatement, scope: Scope): PopObject {
   const name = stmt.identifier.literal
+  if (scope.hasOwnValue(name)) {
+    throw new Error(`duplicate function "${name}"`)
+  }
   const parameters = stmt.parameters.map((param) => param.literal)
   const func = new PopFunctionImpl(parameters, stmt.body, name)
-  scope.setValue(name, func)
+  scope.setOwnValue(name, func)
   return C_NULL
 }
 
@@ -265,7 +271,7 @@ function evalInfixExpression(expr: InfixExpression, scope: Scope): PopObject {
       if (!targetScope) {
         throw new Error(`${name} is not defined`)
       }
-      targetScope.setValue(name, rightOperand)
+      targetScope.setOwnValue(name, rightOperand)
       return C_NULL
     } else {
       throw new Error('cannot assign to lhs')
@@ -322,7 +328,7 @@ function evalCallExpression(expr: CallExpression, scope: Scope): PopObject {
 
   const funcScope = new Scope(scope)
   func.$parameters.forEach((paramName, idx) => {
-    funcScope.setValue(paramName, args[idx])
+    funcScope.setOwnValue(paramName, args[idx])
   })
   const res = evalStatement(func.body, funcScope)
   if (res instanceof ContinueStatementEvalResult) {

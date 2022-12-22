@@ -19,8 +19,27 @@ export class Scope {
     return this.outer.getValue(name)
   }
 
-  setValue(name: string, object: PopObject): void {
+  hasValue(name: string): boolean {
+    const object = this.map.get(name)
+    if (object) {
+      return true
+    }
+    if (!this.outer) {
+      return false
+    }
+    return this.outer.hasValue(name)
+  }
+
+  getOwnValue(name: string): PopObject | null {
+    return this.map.get(name) ?? null
+  }
+
+  setOwnValue(name: string, object: PopObject): void {
     this.map.set(name, object)
+  }
+
+  hasOwnValue(name: string): boolean {
+    return this.map.has(name)
   }
 
   /**

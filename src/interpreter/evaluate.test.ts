@@ -22,6 +22,10 @@ describe('Evaluate', () => {
       if (n == 2) return 1;
       return fib(n - 1) + fib(n - 2);
     }
+    let a = 1;
+    func fib1() {
+      let a = 1;
+    }
     print(fib(10));
         `
     const lexer = new Lexer(input)
