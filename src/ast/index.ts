@@ -1,4 +1,4 @@
-import { LexerSymbol } from 'src/lexer'
+import { LexerSymbol } from '../lexer'
 
 export enum ASTNodeType {
   PROGRAM = 'Program',

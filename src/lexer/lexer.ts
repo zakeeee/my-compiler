@@ -1,21 +1,21 @@
 import { getKeywordToken, isKeyword, Token } from './token'
-import { kleeneClosure, regExpAlternation, regExpConcatenation } from './utils'
+import { kleeneClosure, alternation, concatenation } from './regex'
 
 const identifierRE = /^[A-Za-z][A-Za-z0-9]*/
 
 // Lexer 不处理数字的正负号，都认为是 Tokens.MINUS，丢给语法分析处理
 const numberLiteralRE = /^(0|[1-9]\d*)(\.\d+)?([eE][+-]?\d+)?/
 
-const characterEscapeSequence = regExpAlternation(/["\\bfnrtv]/, /[^"\\bfnrtv0-9xu\r\n]/)
+const characterEscapeSequence = alternation(/["\\bfnrtv]/, /[^"\\bfnrtv0-9xu\r\n]/)
 const hexEscapeSequence = /x[0-9a-fA-F]{2}/
 const unicodeEscapeSequence = /u[0-9a-fA-F]{4}/
-const escapeSequence = regExpAlternation(
+const escapeSequence = alternation(
   characterEscapeSequence,
   hexEscapeSequence,
   unicodeEscapeSequence
 )
-const stringCharacter = regExpAlternation(/[^"\\\r\n]/, regExpConcatenation(/\\/, escapeSequence))
-const stringLiteralRE = regExpConcatenation(/^"/, kleeneClosure(stringCharacter), /"/)
+const stringCharacter = alternation(/[^"\\\r\n]/, concatenation(/\\/, escapeSequence))
+const stringLiteralRE = concatenation(/^"/, kleeneClosure(stringCharacter), /"/)
 
 type Position = {
   line: number
@@ -29,17 +29,14 @@ export type LexerSymbol = {
   end: Position
 }
 
-export const createLexerSymbol = (
-  token: Token,
-  literal: string,
-  start: Position,
-  end: Position
-) => ({
-  token,
-  literal,
-  start,
-  end,
-})
+export function createLexerSymbol(token: Token, literal: string, start: Position, end: Position) {
+  return {
+    token,
+    literal,
+    start,
+    end,
+  }
+}
 
 const code_0 = '0'.charCodeAt(0)
 const code_9 = '9'.charCodeAt(0)

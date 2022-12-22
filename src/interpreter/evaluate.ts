@@ -20,7 +20,7 @@ import {
   Statement,
   WhileStatement,
 } from 'src/ast'
-import { getTokenName, Token } from 'src/lexer'
+import { getTokenName, Token } from '../lexer'
 import { C_FALSE, C_TRUE } from './models/impl/boolean'
 import { builtinFunctions, PopBuiltinFunctionImpl } from './models/impl/builtins'
 import PopFunctionImpl from './models/impl/function'

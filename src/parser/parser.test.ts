@@ -1,4 +1,4 @@
-import { Lexer } from 'src/lexer'
+import { Lexer } from '../lexer'
 import { describe, it } from 'vitest'
 import { Parser } from './parser'
 import { inspect } from 'node:util'
