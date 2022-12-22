@@ -1,48 +1,48 @@
 import { describe, expect, test } from 'vitest'
 import { ObjectType } from '../types'
-import PopBooleanImpl from './boolean'
-import PopNullImpl from './null'
+import { C_TRUE, C_FALSE } from './boolean'
+import { C_NULL } from './null'
 import PopStringImpl from './string'
 
 describe('PopBoolean', () => {
   test('$equal', () => {
-    expect(PopBooleanImpl.TRUE.$equal(PopBooleanImpl.TRUE)).toBe(PopBooleanImpl.TRUE)
-    expect(PopBooleanImpl.FALSE.$equal(PopBooleanImpl.FALSE)).toBe(PopBooleanImpl.TRUE)
-    expect(PopBooleanImpl.TRUE.$equal(PopBooleanImpl.FALSE)).toBe(PopBooleanImpl.FALSE)
-    expect(PopBooleanImpl.FALSE.$equal(PopBooleanImpl.TRUE)).toBe(PopBooleanImpl.FALSE)
-    expect(PopBooleanImpl.TRUE.$equal(PopNullImpl.NULL)).toBe(PopBooleanImpl.FALSE)
-    expect(PopBooleanImpl.FALSE.$equal(PopNullImpl.NULL)).toBe(PopBooleanImpl.FALSE)
+    expect(C_TRUE.$equal(C_TRUE)).toBe(C_TRUE)
+    expect(C_FALSE.$equal(C_FALSE)).toBe(C_TRUE)
+    expect(C_TRUE.$equal(C_FALSE)).toBe(C_FALSE)
+    expect(C_FALSE.$equal(C_TRUE)).toBe(C_FALSE)
+    expect(C_TRUE.$equal(C_NULL)).toBe(C_FALSE)
+    expect(C_FALSE.$equal(C_NULL)).toBe(C_FALSE)
   })
 
   test('$not', () => {
-    expect(PopBooleanImpl.TRUE.$not()).toBe(PopBooleanImpl.FALSE)
-    expect(PopBooleanImpl.FALSE.$not()).toBe(PopBooleanImpl.TRUE)
+    expect(C_TRUE.$not()).toBe(C_FALSE)
+    expect(C_FALSE.$not()).toBe(C_TRUE)
   })
 
   test('$toBoolean', () => {
-    const a = PopBooleanImpl.TRUE.$toBoolean()
-    const b = PopBooleanImpl.FALSE.$toBoolean()
-    expect(a).toBe(PopBooleanImpl.TRUE)
-    expect(b).toBe(PopBooleanImpl.FALSE)
+    const a = C_TRUE.$toBoolean()
+    const b = C_FALSE.$toBoolean()
+    expect(a).toBe(C_TRUE)
+    expect(b).toBe(C_FALSE)
   })
 
   test('$toString', () => {
-    const a = PopBooleanImpl.TRUE.$toString()
-    const b = PopBooleanImpl.FALSE.$toString()
-    expect(a.$equal(new PopStringImpl('true'))).toBe(PopBooleanImpl.TRUE)
-    expect(b.$equal(new PopStringImpl('false'))).toBe(PopBooleanImpl.TRUE)
+    const a = C_TRUE.$toString()
+    const b = C_FALSE.$toString()
+    expect(a.$equal(new PopStringImpl('true'))).toBe(C_TRUE)
+    expect(b.$equal(new PopStringImpl('false'))).toBe(C_TRUE)
   })
 
   test('$type', () => {
-    const a = PopBooleanImpl.TRUE.$type()
-    const b = PopBooleanImpl.FALSE.$type()
+    const a = C_TRUE.$type()
+    const b = C_FALSE.$type()
     expect(a).toBe(ObjectType.BOOLEAN)
     expect(b).toBe(ObjectType.BOOLEAN)
   })
 
   test('$unwrap', () => {
-    const a = PopBooleanImpl.TRUE.$unwrap()
-    const b = PopBooleanImpl.FALSE.$unwrap()
+    const a = C_TRUE.$unwrap()
+    const b = C_FALSE.$unwrap()
     expect(a).toBe(true)
     expect(b).toBe(false)
   })

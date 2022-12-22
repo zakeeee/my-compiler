@@ -1,5 +1,5 @@
 import { ObjectType, PopBoolean, PopNumber, PopObject, PopString } from '../types'
-import PopBooleanImpl from './boolean'
+import { C_FALSE, C_TRUE } from './boolean'
 import PopNumberImpl from './number'
 
 export default class PopStringImpl implements PopString {
@@ -21,9 +21,7 @@ export default class PopStringImpl implements PopString {
   }
 
   $equal(other: PopObject): PopBoolean {
-    return other instanceof PopStringImpl && this.value === other.$unwrap()
-      ? PopBooleanImpl.TRUE
-      : PopBooleanImpl.FALSE
+    return other instanceof PopStringImpl && this.value === other.$unwrap() ? C_TRUE : C_FALSE
   }
 
   $length(): PopNumber {
@@ -31,7 +29,7 @@ export default class PopStringImpl implements PopString {
   }
 
   $toBoolean(): PopBoolean {
-    return this.value.length ? PopBooleanImpl.TRUE : PopBooleanImpl.FALSE
+    return this.value.length ? C_TRUE : C_FALSE
   }
 
   $toString(): PopString {

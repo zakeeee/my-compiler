@@ -41,6 +41,22 @@ export const createLexerSymbol = (
   end,
 })
 
+const code_0 = '0'.charCodeAt(0)
+const code_9 = '9'.charCodeAt(0)
+function isNumber(ch: string): boolean {
+  const code = ch.charCodeAt(0)
+  return code >= code_0 && code <= code_9
+}
+
+const code_A = 'A'.charCodeAt(0)
+const code_Z = 'Z'.charCodeAt(0)
+const code_a = 'a'.charCodeAt(0)
+const code_z = 'z'.charCodeAt(0)
+function isLetter(ch: string): boolean {
+  const code = ch.charCodeAt(0)
+  return (code >= code_A && code <= code_Z) || (code >= code_a && code <= code_z)
+}
+
 export default class Lexer {
   private offset = 0
   private line = 1
@@ -59,144 +75,125 @@ export default class Lexer {
     }
 
     const ch = source[this.offset]
-    switch (ch) {
-      case ',': {
-        this.offset++
-        return createLexerSymbol(Token.COMMA, ch, startPos, this.getPos())
+    if (isNumber(ch)) {
+      const res = this.nextNumberLiteral()
+      if (res) {
+        const [token, literal] = res
+        return createLexerSymbol(token, literal, startPos, this.getPos())
       }
-      case ';': {
-        this.offset++
-        return createLexerSymbol(Token.SEMICOLON, ch, startPos, this.getPos())
+    } else if (isLetter(ch)) {
+      const res = this.nextKeywordOrIdentifier()
+      if (res) {
+        const [token, literal] = res
+        return createLexerSymbol(token, literal, startPos, this.getPos())
       }
-      case '.': {
-        this.offset++
-        return createLexerSymbol(Token.DOT, ch, startPos, this.getPos())
+    } else if (ch === '"') {
+      const res = this.nextStringLiteral()
+      if (res) {
+        const [token, literal] = res
+        return createLexerSymbol(token, literal, startPos, this.getPos())
       }
-      case ':': {
-        this.offset++
-        return createLexerSymbol(Token.COLON, ch, startPos, this.getPos())
-      }
-      case '?': {
-        this.offset++
-        return createLexerSymbol(Token.QUESTION_MARK, ch, startPos, this.getPos())
-      }
-      case '(': {
-        this.offset++
-        return createLexerSymbol(Token.L_PAREN, ch, startPos, this.getPos())
-      }
-      case ')': {
-        this.offset++
-        return createLexerSymbol(Token.R_PAREN, ch, startPos, this.getPos())
-      }
-      case '{': {
-        this.offset++
-        return createLexerSymbol(Token.L_BRACE, ch, startPos, this.getPos())
-      }
-      case '}': {
-        this.offset++
-        return createLexerSymbol(Token.R_BRACE, ch, startPos, this.getPos())
-      }
-      case '[': {
-        this.offset++
-        return createLexerSymbol(Token.L_BRACKET, ch, startPos, this.getPos())
-      }
-      case ']': {
-        this.offset++
-        return createLexerSymbol(Token.R_BRACKET, ch, startPos, this.getPos())
-      }
-      case '<': {
-        this.offset++
-        if (this.offset < source.length && source[this.offset] === '=') {
-          this.offset++
-          return createLexerSymbol(Token.LESS_THAN_EQUAL, '<=', startPos, this.getPos())
+    } else {
+      this.offset++
+      switch (ch) {
+        case ',': {
+          return createLexerSymbol(Token.COMMA, ch, startPos, this.getPos())
         }
-        return createLexerSymbol(Token.LESS_THAN, ch, startPos, this.getPos())
-      }
-      case '>': {
-        this.offset++
-        if (this.offset < source.length && source[this.offset] === '=') {
-          this.offset++
-          return createLexerSymbol(Token.GREATER_THAN_EQUAL, '>=', startPos, this.getPos())
+        case ';': {
+          return createLexerSymbol(Token.SEMICOLON, ch, startPos, this.getPos())
         }
-        return createLexerSymbol(Token.GREATER_THAN, ch, startPos, this.getPos())
-      }
-      case '+': {
-        this.offset++
-        return createLexerSymbol(Token.PLUS, ch, startPos, this.getPos())
-      }
-      case '-': {
-        this.offset++
-        return createLexerSymbol(Token.MINUS, ch, startPos, this.getPos())
-      }
-      case '*': {
-        this.offset++
-        return createLexerSymbol(Token.ASTERISK, ch, startPos, this.getPos())
-      }
-      case '/': {
-        this.offset++
-        return createLexerSymbol(Token.SLASH, ch, startPos, this.getPos())
-      }
-      case '\\': {
-        this.offset++
-        return createLexerSymbol(Token.BACK_SLASH, ch, startPos, this.getPos())
-      }
-      case '%': {
-        this.offset++
-        return createLexerSymbol(Token.PERCENT, ch, startPos, this.getPos())
-      }
-      case '=': {
-        this.offset++
-        if (this.offset < source.length && source[this.offset] === '=') {
-          this.offset++
-          return createLexerSymbol(Token.EQUAL, '==', startPos, this.getPos())
+        case '.': {
+          return createLexerSymbol(Token.DOT, ch, startPos, this.getPos())
         }
-        return createLexerSymbol(Token.ASSIGN, ch, startPos, this.getPos())
-      }
-      case '!': {
-        this.offset++
-        if (this.offset < source.length && source[this.offset] === '=') {
-          this.offset++
-          return createLexerSymbol(Token.NOT_EQUAL, '!=', startPos, this.getPos())
+        case ':': {
+          return createLexerSymbol(Token.COLON, ch, startPos, this.getPos())
         }
-        return createLexerSymbol(Token.NOT, ch, startPos, this.getPos())
-      }
-      case '&': {
-        this.offset++
-        if (this.offset < source.length && source[this.offset] === '&') {
-          this.offset++
-          return createLexerSymbol(Token.LOGIC_AND, '&&', startPos, this.getPos())
+        case '?': {
+          return createLexerSymbol(Token.QUESTION_MARK, ch, startPos, this.getPos())
         }
-        return createLexerSymbol(Token.BIT_AND, ch, startPos, this.getPos())
-      }
-      case '|': {
-        this.offset++
-        if (this.offset < source.length && source[this.offset] === '|') {
-          this.offset++
-          return createLexerSymbol(Token.LOGIC_OR, '||', startPos, this.getPos())
+        case '(': {
+          return createLexerSymbol(Token.L_PAREN, ch, startPos, this.getPos())
         }
-        return createLexerSymbol(Token.BIT_OR, ch, startPos, this.getPos())
-      }
-      case '^': {
-        this.offset++
-        return createLexerSymbol(Token.BIT_XOR, ch, startPos, this.getPos())
-      }
-      case '~': {
-        this.offset++
-        return createLexerSymbol(Token.BIT_NOT, ch, startPos, this.getPos())
-      }
-      case '"': {
-        const res = this.nextStringLiteral()
-        if (res) {
-          const [token, literal] = res
-          return createLexerSymbol(token, literal, startPos, this.getPos())
+        case ')': {
+          return createLexerSymbol(Token.R_PAREN, ch, startPos, this.getPos())
         }
-        break
-      }
-      default: {
-        const res = this.nextNumberLiteral() || this.nextKeywordOrIdentifier()
-        if (res) {
-          const [token, literal] = res
-          return createLexerSymbol(token, literal, startPos, this.getPos())
+        case '{': {
+          return createLexerSymbol(Token.L_BRACE, ch, startPos, this.getPos())
+        }
+        case '}': {
+          return createLexerSymbol(Token.R_BRACE, ch, startPos, this.getPos())
+        }
+        case '[': {
+          return createLexerSymbol(Token.L_BRACKET, ch, startPos, this.getPos())
+        }
+        case ']': {
+          return createLexerSymbol(Token.R_BRACKET, ch, startPos, this.getPos())
+        }
+        case '<': {
+          if (this.offset < source.length && source[this.offset] === '=') {
+            this.offset++
+            return createLexerSymbol(Token.LESS_THAN_EQUAL, '<=', startPos, this.getPos())
+          }
+          return createLexerSymbol(Token.LESS_THAN, ch, startPos, this.getPos())
+        }
+        case '>': {
+          if (this.offset < source.length && source[this.offset] === '=') {
+            this.offset++
+            return createLexerSymbol(Token.GREATER_THAN_EQUAL, '>=', startPos, this.getPos())
+          }
+          return createLexerSymbol(Token.GREATER_THAN, ch, startPos, this.getPos())
+        }
+        case '+': {
+          return createLexerSymbol(Token.PLUS, ch, startPos, this.getPos())
+        }
+        case '-': {
+          return createLexerSymbol(Token.MINUS, ch, startPos, this.getPos())
+        }
+        case '*': {
+          return createLexerSymbol(Token.ASTERISK, ch, startPos, this.getPos())
+        }
+        case '/': {
+          return createLexerSymbol(Token.SLASH, ch, startPos, this.getPos())
+        }
+        case '\\': {
+          return createLexerSymbol(Token.BACK_SLASH, ch, startPos, this.getPos())
+        }
+        case '%': {
+          return createLexerSymbol(Token.PERCENT, ch, startPos, this.getPos())
+        }
+        case '=': {
+          if (this.offset < source.length && source[this.offset] === '=') {
+            this.offset++
+            return createLexerSymbol(Token.EQUAL, '==', startPos, this.getPos())
+          }
+          return createLexerSymbol(Token.ASSIGN, ch, startPos, this.getPos())
+        }
+        case '!': {
+          if (this.offset < source.length && source[this.offset] === '=') {
+            this.offset++
+            return createLexerSymbol(Token.NOT_EQUAL, '!=', startPos, this.getPos())
+          }
+          return createLexerSymbol(Token.NOT, ch, startPos, this.getPos())
+        }
+        case '&': {
+          if (this.offset < source.length && source[this.offset] === '&') {
+            this.offset++
+            return createLexerSymbol(Token.LOGIC_AND, '&&', startPos, this.getPos())
+          }
+          return createLexerSymbol(Token.BIT_AND, ch, startPos, this.getPos())
+        }
+        case '|': {
+          if (this.offset < source.length && source[this.offset] === '|') {
+            this.offset++
+            return createLexerSymbol(Token.LOGIC_OR, '||', startPos, this.getPos())
+          }
+          return createLexerSymbol(Token.BIT_OR, ch, startPos, this.getPos())
+        }
+        case '^': {
+          return createLexerSymbol(Token.BIT_XOR, ch, startPos, this.getPos())
+        }
+        case '~': {
+          return createLexerSymbol(Token.BIT_NOT, ch, startPos, this.getPos())
         }
       }
     }

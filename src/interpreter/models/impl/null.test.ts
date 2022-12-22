@@ -1,33 +1,33 @@
 import { describe, expect, test } from 'vitest'
 import { ObjectType } from '../types'
-import PopBooleanImpl from './boolean'
-import PopNullImpl from './null'
+import { C_FALSE, C_TRUE } from './boolean'
+import { C_NULL } from './null'
 import PopStringImpl from './string'
 
 describe('PopNull', () => {
   test('$equal', () => {
-    expect(PopNullImpl.NULL.$equal(PopNullImpl.NULL)).toBe(PopBooleanImpl.TRUE)
-    expect(PopNullImpl.NULL.$equal(PopBooleanImpl.TRUE)).toBe(PopBooleanImpl.FALSE)
+    expect(C_NULL.$equal(C_NULL)).toBe(C_TRUE)
+    expect(C_NULL.$equal(C_TRUE)).toBe(C_FALSE)
   })
 
   test('$toBoolean', () => {
-    const a = PopNullImpl.NULL.$toBoolean()
-    expect(a).toBe(PopBooleanImpl.FALSE)
+    const a = C_NULL.$toBoolean()
+    expect(a).toBe(C_FALSE)
   })
 
   test('$toString', () => {
-    const a = PopNullImpl.NULL.$toString()
+    const a = C_NULL.$toString()
     const b = new PopStringImpl('null')
-    expect(a.$equal(b)).toBe(PopBooleanImpl.TRUE)
+    expect(a.$equal(b)).toBe(C_TRUE)
   })
 
   test('$unwrap', () => {
-    const a = PopNullImpl.NULL.$unwrap()
+    const a = C_NULL.$unwrap()
     expect(a).toBe(null)
   })
 
   test('$type', () => {
-    const a = PopNullImpl.NULL.$type()
+    const a = C_NULL.$type()
     expect(a).toBe(ObjectType.NULL)
   })
 })

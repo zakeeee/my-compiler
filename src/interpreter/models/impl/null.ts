@@ -1,23 +1,14 @@
 import { ObjectType, PopBoolean, PopNull, PopObject, PopString } from '../types'
-import PopBooleanImpl from './boolean'
+import { C_FALSE, C_TRUE } from './boolean'
 import PopStringImpl from './string'
 
-export default class PopNullImpl implements PopNull {
-  private static _null = new PopNullImpl()
-
-  static get NULL(): PopNull {
-    return this._null
-  }
-
-  // 禁止通过 new 创建
-  private constructor() {}
-
+class PopNullImpl implements PopNull {
   $equal(other: PopObject): PopBoolean {
-    return this === other ? PopBooleanImpl.TRUE : PopBooleanImpl.FALSE
+    return this === other ? C_TRUE : C_FALSE
   }
 
   $toBoolean(): PopBoolean {
-    return PopBooleanImpl.FALSE
+    return C_FALSE
   }
 
   $toString(): PopString {
@@ -32,3 +23,5 @@ export default class PopNullImpl implements PopNull {
     return null
   }
 }
+
+export const C_NULL = new PopNullImpl()

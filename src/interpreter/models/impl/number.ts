@@ -1,5 +1,5 @@
 import { ObjectType, PopBoolean, PopNumber, PopObject, PopString } from '../types'
-import PopBooleanImpl from './boolean'
+import { C_FALSE, C_TRUE } from './boolean'
 import PopStringImpl from './string'
 
 export default class PopNumberImpl implements PopNumber {
@@ -14,13 +14,11 @@ export default class PopNumberImpl implements PopNumber {
   }
 
   $equal(other: PopObject): PopBoolean {
-    return other instanceof PopNumberImpl && this.value === other.$unwrap()
-      ? PopBooleanImpl.TRUE
-      : PopBooleanImpl.FALSE
+    return other instanceof PopNumberImpl && this.value === other.$unwrap() ? C_TRUE : C_FALSE
   }
 
   $toBoolean(): PopBoolean {
-    return this.value !== 0 ? PopBooleanImpl.TRUE : PopBooleanImpl.FALSE
+    return this.value !== 0 ? C_TRUE : C_FALSE
   }
 
   $toString(): PopString {
@@ -105,14 +103,14 @@ export default class PopNumberImpl implements PopNumber {
 
   $greaterThan(other: PopObject): PopBoolean {
     if (other instanceof PopNumberImpl) {
-      return this.value > other.$unwrap() ? PopBooleanImpl.TRUE : PopBooleanImpl.FALSE
+      return this.value > other.$unwrap() ? C_TRUE : C_FALSE
     }
     throw new Error(`cannot perform greaterThan operation on ${this.$type()} and ${other.$type()}`)
   }
 
   $greaterThanEqual(other: PopObject): PopBoolean {
     if (other instanceof PopNumberImpl) {
-      return this.value >= other.$unwrap() ? PopBooleanImpl.TRUE : PopBooleanImpl.FALSE
+      return this.value >= other.$unwrap() ? C_TRUE : C_FALSE
     }
     throw new Error(
       `cannot perform greaterThanEqual operation on ${this.$type()} and ${other.$type()}`
@@ -121,14 +119,14 @@ export default class PopNumberImpl implements PopNumber {
 
   $lessThan(other: PopObject): PopBoolean {
     if (other instanceof PopNumberImpl) {
-      return this.value < other.$unwrap() ? PopBooleanImpl.TRUE : PopBooleanImpl.FALSE
+      return this.value < other.$unwrap() ? C_TRUE : C_FALSE
     }
     throw new Error(`cannot perform lessThan operation on ${this.$type()} and ${other.$type()}`)
   }
 
   $lessThanEqual(other: PopObject): PopBoolean {
     if (other instanceof PopNumberImpl) {
-      return this.value <= other.$unwrap() ? PopBooleanImpl.TRUE : PopBooleanImpl.FALSE
+      return this.value <= other.$unwrap() ? C_TRUE : C_FALSE
     }
     throw new Error(
       `cannot perform lessThanEqual operation on ${this.$type()} and ${other.$type()}`

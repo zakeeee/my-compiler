@@ -1,6 +1,6 @@
 import { ObjectType, PopBoolean, PopBuiltinFunction, PopObject, PopString } from '../types'
-import PopBooleanImpl from './boolean'
-import PopNullImpl from './null'
+import { C_FALSE, C_TRUE } from './boolean'
+import { C_NULL } from './null'
 import PopStringImpl from './string'
 
 export abstract class PopBuiltinFunctionImpl implements PopBuiltinFunction {
@@ -17,11 +17,11 @@ export abstract class PopBuiltinFunctionImpl implements PopBuiltinFunction {
   }
 
   $equal(other: PopObject): PopBoolean {
-    return this === other ? PopBooleanImpl.TRUE : PopBooleanImpl.FALSE
+    return this === other ? C_TRUE : C_FALSE
   }
 
   $toBoolean(): PopBoolean {
-    return PopBooleanImpl.TRUE
+    return C_TRUE
   }
 
   $toString(): PopString {
@@ -76,7 +76,7 @@ class Builtin_Print extends PopBuiltinFunctionImpl {
 
   $call(args: PopObject[]): PopObject {
     console.log(...args.map((o) => o.$toString().$unwrap()))
-    return PopNullImpl.NULL
+    return C_NULL
   }
 }
 

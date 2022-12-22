@@ -1,26 +1,15 @@
 import { ObjectType, PopBoolean, PopObject, PopString } from '../types'
 import PopStringImpl from './string'
 
-export default class PopBooleanImpl implements PopBoolean {
-  private static _true = new PopBooleanImpl(true)
-  private static _false = new PopBooleanImpl(false)
-
-  static get TRUE(): PopBoolean {
-    return this._true
-  }
-
-  static get FALSE(): PopBoolean {
-    return this._false
-  }
-
-  private constructor(private value: boolean) {}
+class PopBooleanImpl implements PopBoolean {
+  constructor(private value: boolean) {}
 
   $equal(other: PopObject): PopBoolean {
-    return this === other ? PopBooleanImpl.TRUE : PopBooleanImpl.FALSE
+    return this === other ? C_TRUE : C_FALSE
   }
 
   $not(): PopBoolean {
-    return this.value === true ? PopBooleanImpl.FALSE : PopBooleanImpl.TRUE
+    return this.value === true ? C_FALSE : C_TRUE
   }
 
   $toBoolean(): PopBoolean {
@@ -39,3 +28,6 @@ export default class PopBooleanImpl implements PopBoolean {
     return this.value
   }
 }
+
+export const C_TRUE = new PopBooleanImpl(true)
+export const C_FALSE = new PopBooleanImpl(false)
