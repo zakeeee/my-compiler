@@ -7,8 +7,8 @@ import {
   Expression,
   ExpressionStatement,
   ForStatement,
-  FuncDeclarationStatement,
   FunctionExpression,
+  FunctionStatement,
   IdentifierExpression,
   IfStatement,
   InfixExpression,
@@ -142,12 +142,13 @@ export class Parser {
   }
 
   parseProgram(): Program {
-    const program = new Program()
+    const symbol = { ...this.currentSymbol }
+    const statements: Statement[] = []
     while (!this.currentTokenIs(Token.EOF)) {
       const statement = this.parseStatement()
-      program.body.push(statement)
+      statements.push(statement)
     }
-    return program
+    return new Program(symbol, statements)
   }
 
   private parseStatement(): Statement {
@@ -155,11 +156,11 @@ export class Parser {
       case Token.L_BRACE:
         return this.parseBlockStatement()
       case Token.SEMICOLON:
-        return new EmptyStatement()
+        return new EmptyStatement({ ...this.currentSymbol })
       case Token.LET:
         return this.parseLetStatement()
       case Token.FUNC:
-        return this.parseFuncDeclarationStatement()
+        return this.parseFunctionStatement()
       case Token.IF:
         return this.parseIfStatement()
       case Token.FOR:
@@ -178,36 +179,35 @@ export class Parser {
   }
 
   private parseBlockStatement(): BlockStatement {
-    const stmt = new BlockStatement()
+    const symbol = { ...this.currentSymbol }
     this.parseToken(Token.L_BRACE)
     const statements: Statement[] = []
     while (!this.currentTokenIs(Token.R_BRACE)) {
       const statement = this.parseStatement()
       statements.push(statement)
     }
-    stmt.statements = statements
     this.parseToken(Token.R_BRACE)
-    return stmt
+    return new BlockStatement(symbol, statements)
   }
 
   private parseExpressionStatement(): ExpressionStatement {
-    const stmt = new ExpressionStatement()
-    stmt.expression = this.parseExpression(Precedence.LOWEST)
+    const symbol = { ...this.currentSymbol }
+    const expression = this.parseExpression(Precedence.LOWEST)
     this.parseToken(Token.SEMICOLON)
-    return stmt
+    return new ExpressionStatement(symbol, expression)
   }
 
   private parseLetStatement(): LetStatement {
-    const statement = new LetStatement()
-    statement.expression = this.parseLetExpression()
+    const symbol = { ...this.currentSymbol }
+    const expression = this.parseLetExpression()
     this.parseToken(Token.SEMICOLON)
-    return statement
+    return new LetStatement(symbol, expression)
   }
 
-  private parseFuncDeclarationStatement(): FuncDeclarationStatement {
-    const stmt = new FuncDeclarationStatement()
+  private parseFunctionStatement(): FunctionStatement {
+    const symbol = { ...this.currentSymbol }
     this.parseToken(Token.FUNC)
-    stmt.identifier = this.parseIdentifier()
+    const identifier = this.parseIdentifier()
     this.parseToken(Token.L_PAREN)
     const parameters: LexicalSymbol[] = []
     if (!this.currentTokenIs(Token.R_PAREN)) {
@@ -217,74 +217,79 @@ export class Parser {
         parameters.push(this.parseIdentifier())
       }
     }
-    stmt.parameters = parameters
     this.parseToken(Token.R_PAREN)
-    stmt.body = this.parseBlockStatement()
-    return stmt
+    const body = this.parseBlockStatement()
+    return new FunctionStatement(symbol, identifier, parameters, body)
   }
 
   private parseIfStatement(): IfStatement {
-    const stmt = new IfStatement()
+    const symbol = { ...this.currentSymbol }
     this.parseToken(Token.IF)
     this.parseToken(Token.L_PAREN)
-    stmt.condition = this.parseExpression(Precedence.LOWEST)
+    const condition = this.parseExpression(Precedence.LOWEST)
     this.parseToken(Token.R_PAREN)
-    stmt.consequence = this.parseStatement()
+    const consequence = this.parseStatement()
+    let alternative: Statement | null = null
     if (this.currentTokenIs(Token.ELSE)) {
       this.parseToken(Token.ELSE)
-      stmt.alternative = this.parseStatement()
+      alternative = this.parseStatement()
     }
-    return stmt
+    return new IfStatement(symbol, condition, consequence, alternative)
   }
 
   private parseForStatement(): ForStatement {
-    const stmt = new ForStatement()
+    const symbol = { ...this.currentSymbol }
     this.parseToken(Token.FOR)
     this.parseToken(Token.L_PAREN)
+    let initialize: Expression | null = null
+    let condition: Expression | null = null
+    let afterEach: Expression | null = null
     if (!this.currentTokenIs(Token.SEMICOLON)) {
-      stmt.initialize = this.parseExpression(Precedence.LOWEST)
+      initialize = this.parseExpression(Precedence.LOWEST)
     }
     this.parseToken(Token.SEMICOLON)
     if (!this.currentTokenIs(Token.SEMICOLON)) {
-      stmt.condition = this.parseExpression(Precedence.LOWEST)
+      condition = this.parseExpression(Precedence.LOWEST)
     }
     this.parseToken(Token.SEMICOLON)
     if (!this.currentTokenIs(Token.R_PAREN)) {
-      stmt.afterEach = this.parseExpression(Precedence.LOWEST)
+      afterEach = this.parseExpression(Precedence.LOWEST)
     }
     this.parseToken(Token.R_PAREN)
-    stmt.body = this.parseStatement()
-    return stmt
+    const body = this.parseStatement()
+    return new ForStatement(symbol, body, initialize, condition, afterEach)
   }
 
   private parseWhileStatement(): WhileStatement {
-    const stmt = new WhileStatement()
+    const symbol = { ...this.currentSymbol }
     this.parseToken(Token.WHILE)
     this.parseToken(Token.L_PAREN)
-    stmt.condition = this.parseExpression(Precedence.LOWEST)
+    const condition = this.parseExpression(Precedence.LOWEST)
     this.parseToken(Token.R_PAREN)
-    stmt.body = this.parseStatement()
-    return stmt
+    const body = this.parseStatement()
+    return new WhileStatement(symbol, condition, body)
   }
 
   private parseContinueStatement(): ContinueStatement {
+    const symbol = { ...this.currentSymbol }
     this.parseToken(Token.CONTINUE)
     this.parseToken(Token.SEMICOLON)
-    return new ContinueStatement()
+    return new ContinueStatement(symbol)
   }
 
   private parseBreakStatement(): BreakStatement {
+    const symbol = { ...this.currentSymbol }
     this.parseToken(Token.BREAK)
     this.parseToken(Token.SEMICOLON)
-    return new BreakStatement()
+    return new BreakStatement(symbol)
   }
 
   private parseReturnStatement(): ReturnStatement {
-    const stmt = new ReturnStatement()
+    const symbol = { ...this.currentSymbol }
     this.parseToken(Token.RETURN)
-    stmt.returnValue = this.parseExpression(Precedence.LOWEST)
+    const returnValue = this.parseExpression(Precedence.LOWEST)
     this.parseToken(Token.SEMICOLON)
-    return stmt
+    return new ReturnStatement(symbol, returnValue)
   }
 
   private parseExpression(precedence: Precedence): Expression {
@@ -306,73 +311,70 @@ export class Parser {
   }
 
   private parseIdentifierExpression(): IdentifierExpression {
-    const expr = new IdentifierExpression()
-    expr.symbol = this.parseIdentifier()
-    return expr
+    const symbol = this.parseIdentifier()
+    return new IdentifierExpression(symbol)
   }
 
   private parseFunctionExpression(): FunctionExpression {
-    const expr = new FunctionExpression()
+    const symbol = { ...this.currentSymbol }
     this.parseToken(Token.FUNC)
     this.parseToken(Token.L_PAREN)
-    const parameters: LexicalSymbol[] = []
+    const parameters: IdentifierExpression[] = []
     if (!this.currentTokenIs(Token.R_PAREN)) {
-      parameters.push(this.parseIdentifier())
+      parameters.push(new IdentifierExpression(this.parseIdentifier()))
       while (this.currentTokenIs(Token.COMMA)) {
         this.parseToken(Token.COMMA)
-        parameters.push(this.parseIdentifier())
+        parameters.push(new IdentifierExpression(this.parseIdentifier()))
       }
     }
-    expr.parameters = parameters
     this.parseToken(Token.R_PAREN)
-    expr.body = this.parseBlockStatement()
-    return expr
+    const body = this.parseBlockStatement()
+    return new FunctionExpression(symbol, parameters, body)
   }
 
   private parseLiteralExpression(): LiteralExpression {
-    const expr = new LiteralExpression()
-    expr.symbol = { ...this.currentSymbol }
+    const symbol = { ...this.currentSymbol }
+    let value: unknown
     switch (this.currentSymbol.token) {
       case Token.NULL:
-        expr.value = null
+        value = null
         break
       case Token.TRUE:
       case Token.FALSE:
-        expr.value = this.currentTokenIs(Token.TRUE)
+        value = this.currentTokenIs(Token.TRUE)
         break
       case Token.NUMBER_LITERAL:
-        expr.value = +this.currentSymbol.literal
+        value = +this.currentSymbol.literal
         break
       case Token.STRING_LITERAL:
-        expr.value = this.currentSymbol.literal
+        value = this.currentSymbol.literal
         break
       default:
         throw new ParseError(this.currentSymbol)
     }
     this.readNextSymbol()
-    return expr
+    return new LiteralExpression(symbol, value)
   }
 
   private parsePrefixExpression(): PrefixExpression {
-    const expr = new PrefixExpression()
-    expr.operator = { ...this.currentSymbol }
+    const symbol = { ...this.currentSymbol }
+    const operator = { ...this.currentSymbol }
     this.readNextSymbol()
-    expr.operand = this.parseExpression(Precedence.PREFIX)
-    return expr
+    const operand = this.parseExpression(Precedence.PREFIX)
+    return new PrefixExpression(symbol, operator, operand)
   }
 
   private parseInfixExpression(left: Expression): InfixExpression {
-    const expr = new InfixExpression()
-    expr.leftOperand = left
-    expr.operator = { ...this.currentSymbol }
+    const symbol = { ...this.currentSymbol }
+    const operator = { ...this.currentSymbol }
     const precedence = this.currentPrecedence()
     this.readNextSymbol()
-    expr.rightOperand = this.parseExpression(precedence)
-    return expr
+    const right = this.parseExpression(precedence)
+    return new InfixExpression(symbol, operator, left, right)
   }
 
   private parseLetExpression(): LetExpression {
-    const expr = new LetExpression()
+    const symbol = { ...this.currentSymbol }
     this.parseToken(Token.LET)
     const arr: VariableDeclaration[] = []
     let identifier: LexicalSymbol
@@ -384,7 +386,7 @@ export class Parser {
     } else {
       value = null
     }
-    arr.push({ identifier, value })
+    arr.push(new VariableDeclaration(identifier, identifier, value))
     while (this.currentTokenIs(Token.COMMA)) {
       this.parseToken(Token.COMMA)
       identifier = this.parseIdentifier()
@@ -394,10 +396,9 @@ export class Parser {
       } else {
         value = null
       }
-      arr.push({ identifier, value })
+      arr.push(new VariableDeclaration(identifier, identifier, value))
     }
-    expr.variableDeclarationSequence = arr
-    return expr
+    return new LetExpression(symbol, arr)
   }
 
   private parseGroupedExpression(): Expression {
@@ -408,8 +409,8 @@ export class Parser {
   }
 
   private parseCallExpression(left: Expression): CallExpression {
-    const expr = new CallExpression()
-    expr.callable = left
+    const symbol = { ...this.currentSymbol }
+    const callable = left
     this.parseToken(Token.L_PAREN)
     const args: Expression[] = []
     if (!this.currentTokenIs(Token.R_PAREN)) {
@@ -419,9 +420,8 @@ export class Parser {
         args.push(this.parseExpression(Precedence.LOWEST))
       }
     }
-    expr.arguments = args
     this.parseToken(Token.R_PAREN)
-    return expr
+    return new CallExpression(symbol, callable, args)
   }
 
   private readNextSymbol() {

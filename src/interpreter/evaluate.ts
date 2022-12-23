@@ -1,5 +1,4 @@
 import {
-  ASTNodeType,
   BlockStatement,
   BreakStatement,
   CallExpression,
@@ -7,8 +6,8 @@ import {
   Expression,
   ExpressionStatement,
   ForStatement,
-  FuncDeclarationStatement,
   FunctionExpression,
+  FunctionStatement,
   IdentifierExpression,
   IfStatement,
   InfixExpression,
@@ -19,127 +18,177 @@ import {
   Program,
   ReturnStatement,
   Statement,
+  TreeNodeType,
   WhileStatement,
 } from 'src/ast'
 import { getTokenName, Token } from '../lexer'
+import { PopError } from './error'
 import { C_FALSE, C_TRUE } from './models/impl/boolean'
 import { builtinFunctions, PopBuiltinFunctionImpl } from './models/impl/builtins'
 import PopFunctionImpl from './models/impl/function'
 import { C_NULL } from './models/impl/null'
 import PopNumberImpl from './models/impl/number'
 import PopStringImpl from './models/impl/string'
+import { C_VOID, isVoid, VoidType } from './models/impl/void'
 import { PopFunction, PopObject } from './models/types'
-import { Scope } from './scope'
+import { Scope, uninitialized } from './scope'
+
+type EvalResult<T> = [PopError, null] | [null, T]
 
 class ContinueStatementEvalResult {}
 
 class BreakStatementEvalResult {}
 
 class ReturnStatementEvalResult {
-  constructor(readonly returnValue: PopObject) {}
+  constructor(readonly returnValue: PopObject | VoidType) {}
 }
 
-export function evalProgram(node: Program, scope: Scope): PopObject {
+export function evalProgram(node: Program, scope: Scope): VoidType {
   for (const stmt of node.body) {
-    const res = evalStatement(stmt, scope)
-    if (res instanceof ContinueStatementEvalResult) {
-      throw new Error('continue outside of loop')
+    const [err, val] = evalStatement(stmt, scope)
+    if (err) {
+      err.pushStack(stmt.symbol.start)
+      console.error(err.printStack())
+      break
     }
-    if (res instanceof BreakStatementEvalResult) {
-      throw new Error('break outside of loop')
+    if (val instanceof ContinueStatementEvalResult) {
+      const err = new PopError('continue outside of loop')
+      err.pushStack(stmt.symbol.start)
+      console.error(err.printStack())
+      break
     }
-    if (res instanceof ReturnStatementEvalResult) {
-      throw new Error('return outside of function')
+    if (val instanceof BreakStatementEvalResult) {
+      const err = new PopError('break outside of loop')
+      err.pushStack(stmt.symbol.start)
+      console.error(err.printStack())
+      break
+    }
+    if (val instanceof ReturnStatementEvalResult) {
+      const err = new PopError('return outside of function')
+      err.pushStack(stmt.symbol.start)
+      console.error(err.printStack())
+      break
     }
   }
-  return C_NULL
+  return C_VOID
 }
 
 function evalStatement(
   stmt: Statement,
   scope: Scope
-): PopObject | ContinueStatementEvalResult | BreakStatementEvalResult | ReturnStatementEvalResult {
+): EvalResult<
+  VoidType | ContinueStatementEvalResult | BreakStatementEvalResult | ReturnStatementEvalResult
+> {
   switch (stmt.nodeType) {
-    case ASTNodeType.EMPTY_STATEMENT:
-      return C_NULL
-    case ASTNodeType.BLOCK_STATEMENT:
+    case TreeNodeType.EMPTY_STATEMENT:
+      return [null, C_VOID]
+    case TreeNodeType.BLOCK_STATEMENT:
       return evalBlockStatement(stmt as BlockStatement, scope)
-    case ASTNodeType.EXPRESSION_STATEMENT:
+    case TreeNodeType.EXPRESSION_STATEMENT:
       return evalExpressionStatement(stmt as ExpressionStatement, scope)
-    case ASTNodeType.LET_STATEMENT:
+    case TreeNodeType.LET_STATEMENT:
       return evalLetStatement(stmt as LetStatement, scope)
-    case ASTNodeType.FUNC_DECLARATION_STATEMENT:
-      return evalFuncDeclarationStatement(stmt as FuncDeclarationStatement, scope)
-    case ASTNodeType.IF_STATEMENT:
+    case TreeNodeType.FUNCTION_STATEMENT:
+      return evalFunctionStatement(stmt as FunctionStatement, scope)
+    case TreeNodeType.IF_STATEMENT:
       return evalIfStatement(stmt as IfStatement, scope)
-    case ASTNodeType.FOR_STATEMENT:
+    case TreeNodeType.FOR_STATEMENT:
       return evalForStatement(stmt as ForStatement, scope)
-    case ASTNodeType.WHILE_STATEMENT:
+    case TreeNodeType.WHILE_STATEMENT:
       return evalWhileStatement(stmt as WhileStatement, scope)
-    case ASTNodeType.CONTINUE_STATEMENT:
+    case TreeNodeType.CONTINUE_STATEMENT:
       return evalContinueStatement(stmt as ContinueStatement, scope)
-    case ASTNodeType.BREAK_STATEMENT:
+    case TreeNodeType.BREAK_STATEMENT:
       return evalBreakStatement(stmt as BreakStatement, scope)
-    case ASTNodeType.RETURN_STATEMENT:
+    case TreeNodeType.RETURN_STATEMENT:
       return evalReturnStatement(stmt as ReturnStatement, scope)
-    default:
-      throw new Error(`invalid statement type "${stmt.nodeType}"`)
+    default: {
+      const err = new PopError(`invalid statement type "${stmt.nodeType}"`)
+      err.pushStack(stmt.symbol.start)
+      return [err, null]
+    }
   }
 }
 
 function evalBlockStatement(
   stmt: BlockStatement,
   scope: Scope
-): PopObject | ContinueStatementEvalResult | BreakStatementEvalResult | ReturnStatementEvalResult {
+): EvalResult<
+  VoidType | ContinueStatementEvalResult | BreakStatementEvalResult | ReturnStatementEvalResult
+> {
   const blockScope = new Scope(scope)
   for (const childStmt of stmt.statements) {
-    const res = evalStatement(childStmt, blockScope)
+    const [err, val] = evalStatement(childStmt, blockScope)
+    if (err) {
+      return [err, null]
+    }
     if (
-      res instanceof ContinueStatementEvalResult ||
-      res instanceof BreakStatementEvalResult ||
-      res instanceof ReturnStatementEvalResult
+      val instanceof ContinueStatementEvalResult ||
+      val instanceof BreakStatementEvalResult ||
+      val instanceof ReturnStatementEvalResult
     ) {
-      return res
+      return [null, val]
     }
   }
-  return C_NULL
+  return [null, C_VOID]
 }
 
-function evalExpressionStatement(stmt: ExpressionStatement, scope: Scope): PopObject {
-  evalExpression(stmt.expression, scope)
-  return C_NULL
+function evalExpressionStatement(stmt: ExpressionStatement, scope: Scope): EvalResult<VoidType> {
+  const [err] = evalExpression(stmt.expression, scope)
+  if (err) {
+    return [err, null]
+  }
+  return [null, C_VOID]
 }
 
-function evalLetStatement(stmt: LetStatement, scope: Scope): PopObject {
-  evalLetExpression(stmt.expression, scope)
-  return C_NULL
+function evalLetStatement(stmt: LetStatement, scope: Scope): EvalResult<VoidType> {
+  const [err] = evalLetExpression(stmt.expression, scope)
+  if (err) {
+    return [err, null]
+  }
+  return [null, C_VOID]
 }
 
-function evalFuncDeclarationStatement(stmt: FuncDeclarationStatement, scope: Scope): PopObject {
+function evalFunctionStatement(stmt: FunctionStatement, scope: Scope): EvalResult<VoidType> {
   const name = stmt.identifier.literal
   if (scope.hasOwnValue(name)) {
-    throw new Error(`duplicate function "${name}"`)
+    const err = new PopError(`duplicate function "${name}"`)
+    err.pushStack(stmt.symbol.start)
+    return [err, null]
   }
-  const parameters = stmt.parameters.map((param) => param.literal)
-  const func = new PopFunctionImpl(parameters, stmt.body, scope, name)
+  const params = stmt.parameters.map((param) => param.literal)
+  const func = new PopFunctionImpl(params, stmt.body, scope, name)
   scope.setOwnValue(name, func)
-  return C_NULL
+  return [null, C_VOID]
 }
 
 function evalIfStatement(
   stmt: IfStatement,
   scope: Scope
-): PopObject | ContinueStatementEvalResult | BreakStatementEvalResult | ReturnStatementEvalResult {
-  const condition = evalExpression(stmt.condition, scope)
+): EvalResult<
+  VoidType | ContinueStatementEvalResult | BreakStatementEvalResult | ReturnStatementEvalResult
+> {
+  const [err, condition] = evalExpression(stmt.condition, scope)
+  if (err) {
+    return [err, null]
+  }
+  if (isVoid(condition)) {
+    const err = new PopError(`condition is no value`)
+    err.pushStack(stmt.condition.symbol.start)
+    return [err, null]
+  }
   if (condition.$toBoolean().$unwrap()) {
     return evalStatement(stmt.consequence, scope)
   } else if (stmt.alternative) {
     return evalStatement(stmt.alternative, scope)
   }
-  return C_NULL
+  return [null, C_NULL]
 }
 
-function evalForStatement(stmt: ForStatement, scope: Scope): PopObject | ReturnStatementEvalResult {
+function evalForStatement(
+  stmt: ForStatement,
+  scope: Scope
+): EvalResult<VoidType | ReturnStatementEvalResult> {
   const {
     initialize: initializeExpr,
     condition: conditionExpr,
@@ -147,76 +196,150 @@ function evalForStatement(stmt: ForStatement, scope: Scope): PopObject | ReturnS
     body: bodyStatement,
   } = stmt
   if (initializeExpr) {
-    evalExpression(initializeExpr, scope)
+    const [err] = evalExpression(initializeExpr, scope)
+    if (err) {
+      return [err, null]
+    }
   }
-  let condition = conditionExpr ? evalExpression(conditionExpr, scope).$toBoolean().$unwrap() : true
+
+  let condition = true
+  if (conditionExpr) {
+    const [err, val] = evalExpression(conditionExpr, scope)
+    if (err) {
+      return [err, null]
+    }
+    if (isVoid(val)) {
+      const err = new PopError(`condition is no value`)
+      err.pushStack(conditionExpr.symbol.start)
+      return [err, null]
+    }
+    condition = val.$toBoolean().$unwrap()
+  }
   while (condition) {
-    const res = evalStatement(bodyStatement, scope)
-    if (res instanceof BreakStatementEvalResult) {
+    const [err, val] = evalStatement(bodyStatement, scope)
+    if (err) {
+      return [err, null]
+    }
+    if (val instanceof BreakStatementEvalResult) {
       break
     }
-    if (res instanceof ReturnStatementEvalResult) {
-      return res
+    if (val instanceof ReturnStatementEvalResult) {
+      return [null, val]
     }
+
     if (afterEachExpr) {
-      evalExpression(afterEachExpr, scope)
+      const [err] = evalExpression(afterEachExpr, scope)
+      if (err) {
+        return [err, null]
+      }
     }
-    condition = conditionExpr ? evalExpression(conditionExpr, scope).$toBoolean().$unwrap() : true
+
+    if (conditionExpr) {
+      const [err, val] = evalExpression(conditionExpr, scope)
+      if (err) {
+        return [err, null]
+      }
+      if (isVoid(val)) {
+        const err = new PopError(`condition is no value`)
+        err.pushStack(conditionExpr.symbol.start)
+        return [err, null]
+      }
+      condition = val.$toBoolean().$unwrap()
+    }
   }
-  return C_NULL
+  return [null, C_VOID]
 }
 
 function evalWhileStatement(
   stmt: WhileStatement,
   scope: Scope
-): PopObject | ReturnStatementEvalResult {
-  const { condition: conditionExpr, body: bodyStatement } = stmt
-  let condition = conditionExpr ? evalExpression(conditionExpr, scope).$toBoolean().$unwrap() : true
+): EvalResult<VoidType | ReturnStatementEvalResult> {
+  const [err, val] = evalExpression(stmt.condition, scope)
+  if (err) {
+    return [err, null]
+  }
+  if (isVoid(val)) {
+    const err = new PopError(`condition is no value`)
+    err.pushStack(stmt.condition.symbol.start)
+    return [err, null]
+  }
+  let condition = val.$toBoolean().$unwrap()
   while (condition) {
-    const res = evalStatement(bodyStatement, scope)
-    if (res instanceof BreakStatementEvalResult) {
+    const [err1, val1] = evalStatement(stmt.body, scope)
+    if (err1) {
+      return [err1, null]
+    }
+    if (val1 instanceof BreakStatementEvalResult) {
       break
     }
-    if (res instanceof ReturnStatementEvalResult) {
-      return res
+    if (val1 instanceof ReturnStatementEvalResult) {
+      return [null, val1]
     }
-    condition = conditionExpr ? evalExpression(conditionExpr, scope).$toBoolean().$unwrap() : true
+
+    const [err2, val2] = evalExpression(stmt.condition, scope)
+    if (err2) {
+      return [err2, null]
+    }
+    if (isVoid(val2)) {
+      const err = new PopError(`condition is no value`)
+      err.pushStack(stmt.condition.symbol.start)
+      return [err, null]
+    }
+    condition = val2.$toBoolean().$unwrap()
   }
-  return C_NULL
+  return [null, C_VOID]
 }
 
-function evalContinueStatement(stmt: ContinueStatement, scope: Scope): ContinueStatementEvalResult {
-  return new ContinueStatementEvalResult()
+function evalContinueStatement(
+  stmt: ContinueStatement,
+  scope: Scope
+): EvalResult<ContinueStatementEvalResult> {
+  return [null, new ContinueStatementEvalResult()]
 }
 
-function evalBreakStatement(stmt: BreakStatement, scope: Scope): BreakStatementEvalResult {
-  return new BreakStatementEvalResult()
+function evalBreakStatement(
+  stmt: BreakStatement,
+  scope: Scope
+): EvalResult<BreakStatementEvalResult> {
+  return [null, new BreakStatementEvalResult()]
 }
 
-function evalReturnStatement(stmt: ReturnStatement, scope: Scope): ReturnStatementEvalResult {
-  return new ReturnStatementEvalResult(
-    stmt.returnValue ? evalExpression(stmt.returnValue, scope) : C_NULL
-  )
+function evalReturnStatement(
+  stmt: ReturnStatement,
+  scope: Scope
+): EvalResult<ReturnStatementEvalResult> {
+  let ret: PopObject | VoidType = C_VOID
+  if (stmt.returnValue) {
+    const [err, val] = evalExpression(stmt.returnValue, scope)
+    if (err) {
+      return [err, null]
+    }
+    ret = val
+  }
+  return [null, new ReturnStatementEvalResult(ret)]
 }
 
-function evalExpression(expr: Expression, scope: Scope): PopObject {
+function evalExpression(expr: Expression, scope: Scope): EvalResult<PopObject | VoidType> {
   switch (expr.nodeType) {
-    case ASTNodeType.PREFIX_EXPRESSION:
+    case TreeNodeType.PREFIX_EXPRESSION:
       return evalPrefixExpression(expr as PrefixExpression, scope)
-    case ASTNodeType.INFIX_EXPRESSION:
+    case TreeNodeType.INFIX_EXPRESSION:
       return evalInfixExpression(expr as InfixExpression, scope)
-    case ASTNodeType.LET_EXPRESSION:
+    case TreeNodeType.LET_EXPRESSION:
       return evalLetExpression(expr as LetExpression, scope)
-    case ASTNodeType.CALL_EXPRESSION:
+    case TreeNodeType.CALL_EXPRESSION:
       return evalCallExpression(expr as CallExpression, scope)
-    case ASTNodeType.LITERAL_EXPRESSION:
+    case TreeNodeType.LITERAL_EXPRESSION:
       return evalLiteralExpression(expr as LiteralExpression, scope)
-    case ASTNodeType.IDENTIFIER_EXPRESSION:
+    case TreeNodeType.IDENTIFIER_EXPRESSION:
       return evalIdentifierExpression(expr as IdentifierExpression, scope)
-    case ASTNodeType.FUNCTION_EXPRESSION:
+    case TreeNodeType.FUNCTION_EXPRESSION:
       return evalFunctionExpression(expr as FunctionExpression, scope)
-    default:
-      throw new Error(`invalid expression type "${expr.nodeType}"`)
+    default: {
+      const err = new PopError(`invalid expression type "${expr.nodeType}"`)
+      err.pushStack(expr.symbol.start)
+      return [err, null]
+    }
   }
 }
 
@@ -226,21 +349,38 @@ const prefixOpTokenToSlotNameMap = {
   [Token.BIT_NOT]: '$bitNot',
 } as Record<Token, string>
 
-function evalPrefixExpression(expr: PrefixExpression, scope: Scope): PopObject {
-  const operand = evalExpression(expr.operand, scope)
+function evalPrefixExpression(expr: PrefixExpression, scope: Scope): EvalResult<PopObject> {
+  const [err, operand] = evalExpression(expr.operand, scope)
+  if (err) {
+    return [err, null]
+  }
+  if (isVoid(operand)) {
+    const err = new PopError(`operand is no value`)
+    err.pushStack(expr.operand.symbol.start)
+    return [err, null]
+  }
+
   switch (expr.operator.token) {
     case Token.NOT:
-      return operand.$toBoolean().$not()
+      return [null, operand.$toBoolean().$not()]
     default: {
       const token = expr.operator.token
       const slotName = prefixOpTokenToSlotNameMap[token]
       if (slotName && slotName in operand) {
         const func = (operand as any)[slotName]
         if (typeof func === 'function') {
-          return func.call(operand)
+          try {
+            return [null, func.call(operand)]
+          } catch (error) {
+            const err = new PopError(`${error}`)
+            err.pushStack(expr.operator.start)
+            return [err, null]
+          }
         }
       }
-      throw new Error(`unsupported infix operation "${getTokenName(token)}"`)
+      const err = new PopError(`unsupported infix operation "${getTokenName(token)}"`)
+      err.pushStack(expr.operator.start)
+      return [err, null]
     }
   }
 }
@@ -279,161 +419,278 @@ const assignmentOperators = [
   Token.BIT_XOR_EQUAL,
 ]
 
-function evalInfixExpression(expr: InfixExpression, scope: Scope): PopObject {
-  const rightOperand = evalExpression(expr.rightOperand, scope)
+function evalInfixExpression(
+  expr: InfixExpression,
+  scope: Scope
+): EvalResult<VoidType | PopObject> {
+  const [err1, rightOperand] = evalExpression(expr.right, scope)
+  if (err1) {
+    return [err1, null]
+  }
+  if (isVoid(rightOperand)) {
+    const err = new PopError(`right operand is no value`)
+    err.pushStack(expr.right.symbol.start)
+    return [err, null]
+  }
+
+  if (expr.operator.token === Token.ASSIGN) {
+    // lhs = rhs
+    if (!(expr.left instanceof IdentifierExpression)) {
+      // 不是左值
+      const err = new PopError('cannot assign to lhs')
+      err.pushStack(expr.left.symbol.start)
+      return [err, null]
+    }
+
+    const { literal: name } = expr.left.symbol
+    const targetScope = scope.getScope(name)
+    if (!targetScope) {
+      const err = new PopError(`"${name}" is not defined`)
+      err.pushStack(expr.left.symbol.start)
+      return [err, null]
+    }
+
+    targetScope.setOwnValue(name, rightOperand)
+    return [null, C_VOID]
+  }
+
+  if (assignmentOperators.includes(expr.operator.token)) {
+    // lhs += rhs, lhs -= rhs, ...
+    if (!(expr.left instanceof IdentifierExpression)) {
+      // 不是左值
+      const err = new PopError('cannot assign to lhs')
+      err.pushStack(expr.left.symbol.start)
+      return [err, null]
+    }
+
+    const { literal: name } = expr.left.symbol
+    const targetScope = scope.getScope(name)
+    if (!targetScope) {
+      const err = new PopError(`"${name}" is not defined`)
+      err.pushStack(expr.left.symbol.start)
+      return [err, null]
+    }
+
+    const leftOperand = targetScope.getValue(name)!
+    if (leftOperand === uninitialized) {
+      const err = new PopError(`"${name}" is not initialized`)
+      err.pushStack(expr.left.symbol.start)
+      return [err, null]
+    }
+
+    let value: PopObject
+    const { token } = expr.operator
+    const slotName = infixOpTokenToSlotNameMap[token]
+    if (
+      slotName &&
+      slotName in leftOperand &&
+      typeof (leftOperand as any)[slotName] === 'function'
+    ) {
+      value = (leftOperand as any)[slotName].call(leftOperand, rightOperand)
+    } else {
+      const err = new PopError(`unsupported infix operation "${getTokenName(token)}"`)
+      err.pushStack(expr.operator.start)
+      return [err, null]
+    }
+
+    targetScope.setOwnValue(name, value)
+    return [null, C_VOID]
+  }
+
+  const [err2, leftOperand] = evalExpression(expr.left, scope)
+  if (err2) {
+    return [err2, null]
+  }
+  if (isVoid(leftOperand)) {
+    const err = new PopError(`left operator is no value`)
+    err.pushStack(expr.left.symbol.start)
+    return [err, null]
+  }
   const { token } = expr.operator
-  if (token === Token.ASSIGN) {
-    if (expr.leftOperand instanceof IdentifierExpression) {
-      const name = expr.leftOperand.symbol.literal
-      const targetScope = scope.getScope(name)
-      if (!targetScope) {
-        throw new Error(`${name} is not defined`)
-      }
-      targetScope.setOwnValue(name, rightOperand)
-      return C_NULL
-    } else {
-      throw new Error('cannot assign to lhs')
-    }
-  }
-
-  if (assignmentOperators.includes(token)) {
-    if (expr.leftOperand instanceof IdentifierExpression) {
-      const name = expr.leftOperand.symbol.literal
-      const targetScope = scope.getScope(name)
-      if (!targetScope) {
-        throw new Error(`${name} is not defined`)
-      }
-      const leftOperand = targetScope.getValue(name)!
-      let value: PopObject
-      const slotName = infixOpTokenToSlotNameMap[token]
-      if (
-        slotName &&
-        slotName in leftOperand &&
-        typeof (leftOperand as any)[slotName] === 'function'
-      ) {
-        value = (leftOperand as any)[slotName].call(leftOperand, rightOperand)
-      } else {
-        throw new Error(`unsupported infix operation "${getTokenName(token)}"`)
-      }
-      targetScope.setOwnValue(name, value)
-      return C_NULL
-    } else {
-      throw new Error('cannot assign to lhs')
-    }
-  }
-
-  const leftOperand = evalExpression(expr.leftOperand, scope)
   switch (token) {
     case Token.EQUAL:
-      return leftOperand.$equal(rightOperand)
+      return [null, leftOperand.$equal(rightOperand)]
     case Token.NOT_EQUAL: {
-      return leftOperand.$equal(rightOperand).$not()
+      return [null, leftOperand.$equal(rightOperand).$not()]
     }
     case Token.LOGIC_AND: {
       const a = leftOperand.$toBoolean()
       const b = rightOperand.$toBoolean()
-      return a.$unwrap() && b.$unwrap() ? C_TRUE : C_FALSE
+      return [null, a.$unwrap() && b.$unwrap() ? C_TRUE : C_FALSE]
     }
     case Token.LOGIC_OR: {
       const a = leftOperand.$toBoolean()
       const b = rightOperand.$toBoolean()
-      return a.$unwrap() || b.$unwrap() ? C_TRUE : C_FALSE
+      return [null, a.$unwrap() || b.$unwrap() ? C_TRUE : C_FALSE]
     }
     default: {
       const slotName = infixOpTokenToSlotNameMap[token]
       if (slotName && slotName in leftOperand) {
         const func = (leftOperand as any)[slotName]
         if (typeof func === 'function') {
-          return func.call(leftOperand, rightOperand)
+          try {
+            return [null, func.call(leftOperand, rightOperand)]
+          } catch (error) {
+            const err = new PopError(`${error}`)
+            err.pushStack(expr.operator.start)
+            return [err, null]
+          }
         }
       }
-      throw new Error(`unsupported infix operation "${getTokenName(token)}"`)
+      const err = new PopError(`unsupported infix operation "${getTokenName(token)}"`)
+      err.pushStack(expr.operator.start)
+      return [err, null]
     }
   }
 }
 
-function evalLetExpression(expr: LetExpression, scope: Scope): PopObject {
+function evalLetExpression(expr: LetExpression, scope: Scope): EvalResult<VoidType> {
   const arr = expr.variableDeclarationSequence
-  arr.forEach((item) => {
+  for (const item of arr) {
     const name = item.identifier.literal
+
     if (scope.hasOwnValue(name)) {
-      throw new Error(`duplicate variable "${name}"`)
+      // 当前作用域内重复声明
+      const err = new PopError(`duplicate variable "${name}"`)
+      err.pushStack(item.identifier.start)
+      return [err, null]
     }
+
     if (item.value) {
-      const value = evalExpression(item.value, scope)
-      scope.setOwnValue(name, value)
+      const [err, val] = evalExpression(item.value, scope)
+      if (err) {
+        return [err, null]
+      }
+      if (isVoid(val)) {
+        const err = new PopError(`rhs is no value`)
+        err.pushStack(item.identifier.start)
+        return [err, null]
+      }
+      scope.setOwnValue(name, val)
+    } else {
+      scope.setOwnValue(name, uninitialized)
     }
-  })
-  return C_NULL
+  }
+  return [null, C_VOID]
 }
 
-function evalCallExpression(expr: CallExpression, scope: Scope): PopObject {
-  const func = evalExpression(expr.callable!, scope)
-  if (!(func instanceof PopFunctionImpl || func instanceof PopBuiltinFunctionImpl)) {
-    throw new Error('object is not callable')
+function evalCallExpression(expr: CallExpression, scope: Scope): EvalResult<VoidType | PopObject> {
+  const [err1, func] = evalExpression(expr.callable!, scope)
+  if (err1) {
+    err1.pushStack(expr.symbol.start)
+    return [err1, null]
   }
 
-  const args = expr.arguments.map((arg) => evalExpression(arg, scope))
+  if (!(func instanceof PopFunctionImpl || func instanceof PopBuiltinFunctionImpl)) {
+    const err = new PopError(`object is not callable`)
+    err.pushStack(expr.symbol.start)
+    return [err, null]
+  }
+
+  const args: PopObject[] = []
+  for (const arg of expr.args) {
+    const [err, val] = evalExpression(arg, scope)
+    if (err) {
+      return [err, null]
+    }
+    if (isVoid(val)) {
+      const err = new PopError(`no value used as args`)
+      err.pushStack(arg.symbol.start)
+      return [err, null]
+    }
+    args.push(val)
+  }
   if (args.length < func.$parameters.length) {
-    throw new Error(
+    const err = new PopError(
       `${func.$name} requires at least ${func.$parameters.length} arguments but ${args.length} is given`
     )
+    err.pushStack(expr.symbol.start)
+    return [err, null]
   }
 
   if (func instanceof PopBuiltinFunctionImpl) {
-    return func.$call(args)
+    try {
+      return [null, func.$call(args)]
+    } catch (error) {
+      const err = new PopError(`${error}`)
+      err.pushStack(expr.symbol.start)
+      return [err, null]
+    }
   }
 
   const funcScope = new Scope(func.scope)
   func.$parameters.forEach((paramName, idx) => {
     funcScope.setOwnValue(paramName, args[idx])
   })
-  const res = evalStatement(func.body, funcScope)
+  const [err2, res] = evalStatement(func.body, funcScope)
+  if (err2) {
+    err2.pushStack(expr.symbol.start)
+    return [err2, null]
+  }
   if (res instanceof ContinueStatementEvalResult) {
-    throw new Error('continue outside of loop')
+    const err = new PopError('continue outside of loop')
+    err.pushStack(expr.symbol.start)
+    return [err, null]
   }
   if (res instanceof BreakStatementEvalResult) {
-    throw new Error('break outside of loop')
+    const err = new PopError('break outside of loop')
+    err.pushStack(expr.symbol.start)
+    return [err, null]
   }
   if (res instanceof ReturnStatementEvalResult) {
-    return res.returnValue
+    return [null, res.returnValue]
   }
-  return C_NULL
+  return [null, C_VOID]
 }
 
-function evalLiteralExpression(expr: LiteralExpression, scope: Scope): PopObject {
+function evalLiteralExpression(expr: LiteralExpression, scope: Scope): EvalResult<PopObject> {
   switch (expr.symbol.token) {
     case Token.NUMBER_LITERAL:
-      return new PopNumberImpl(expr.value as number)
+      return [null, new PopNumberImpl(expr.value as number)]
     case Token.STRING_LITERAL:
       // TODO
-      return new PopStringImpl(eval(expr.value as string))
+      return [null, new PopStringImpl(eval(expr.value as string))]
     case Token.TRUE:
-      return C_TRUE
+      return [null, C_TRUE]
     case Token.FALSE:
-      return C_FALSE
+      return [null, C_FALSE]
     case Token.NULL:
-      return C_NULL
-    default:
-      throw new Error('unknown literal expression')
+      return [null, C_NULL]
+    default: {
+      const err = new PopError('unknown literal expression')
+      err.pushStack(expr.symbol.start)
+      return [err, null]
+    }
   }
 }
 
-function evalIdentifierExpression(expr: IdentifierExpression, scope: Scope): PopObject {
+function evalIdentifierExpression(expr: IdentifierExpression, scope: Scope): EvalResult<PopObject> {
   const name = expr.symbol.literal
   const obj = scope.getValue(name)
   if (obj) {
-    return obj
+    // 使用了未初始化的变量
+    if (obj === uninitialized) {
+      const err = new PopError(`${name} is not initialized`)
+      err.pushStack(expr.symbol.start)
+      return [err, null]
+    }
+
+    return [null, obj]
   }
 
+  // 内置功能
   if (name in builtinFunctions) {
-    return builtinFunctions[name as keyof typeof builtinFunctions]
+    const builtin = builtinFunctions[name as keyof typeof builtinFunctions]
+    return [null, builtin]
   }
 
-  throw new Error(`${name} is not defined`)
+  // 未定义变量
+  const err = new PopError(`${name} is not defined`)
+  err.pushStack(expr.symbol.start)
+  return [err, null]
 }
 
-function evalFunctionExpression(expr: FunctionExpression, scope: Scope): PopFunction {
-  const parameters = expr.parameters.map((param) => param.literal)
-  return new PopFunctionImpl(parameters, expr.body, scope)
+function evalFunctionExpression(expr: FunctionExpression, scope: Scope): EvalResult<PopFunction> {
+  const parameters = expr.params.map((param) => param.symbol.literal)
+  return [null, new PopFunctionImpl(parameters, expr.body, scope)]
 }

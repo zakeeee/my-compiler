@@ -1,148 +1,195 @@
 import { LexicalSymbol } from '../lexer'
 
-export enum ASTNodeType {
-  PROGRAM = 'Program',
+export enum TreeNodeType {
+  PROGRAM = 'program',
+  VARIABLE_DECLARATION = 'variableDeclaration',
 
-  BLOCK_STATEMENT = 'BlockStatement',
-  EMPTY_STATEMENT = 'EmptyStatement',
-  EXPRESSION_STATEMENT = 'ExpressionStatement',
-  LET_STATEMENT = 'LetStatement',
-  FUNC_DECLARATION_STATEMENT = 'FuncDeclarationStatement',
-  IF_STATEMENT = 'IfStatement',
-  FOR_STATEMENT = 'ForStatement',
-  WHILE_STATEMENT = 'WhileStatement',
-  CONTINUE_STATEMENT = 'ContinueStatement',
-  BREAK_STATEMENT = 'BreakStatement',
-  RETURN_STATEMENT = 'ReturnStatement',
+  BLOCK_STATEMENT = 'blockStatement',
+  EMPTY_STATEMENT = 'emptyStatement',
+  EXPRESSION_STATEMENT = 'expressionStatement',
+  LET_STATEMENT = 'letStatement',
+  FUNCTION_STATEMENT = 'functionStatement',
+  IF_STATEMENT = 'ifStatement',
+  FOR_STATEMENT = 'forStatement',
+  WHILE_STATEMENT = 'whileStatement',
+  CONTINUE_STATEMENT = 'continueStatement',
+  BREAK_STATEMENT = 'breakStatement',
+  RETURN_STATEMENT = 'returnStatement',
 
-  PREFIX_EXPRESSION = 'PrefixExpression',
-  INFIX_EXPRESSION = 'InfixExpression',
-  LET_EXPRESSION = 'LetExpression',
-  CALL_EXPRESSION = 'CallExpression',
-  LITERAL_EXPRESSION = 'LiteralExpression',
-  IDENTIFIER_EXPRESSION = 'IdentifierExpression',
-  FUNCTION_EXPRESSION = 'FunctionExpression',
+  PREFIX_EXPRESSION = 'prefixExpression',
+  INFIX_EXPRESSION = 'infixExpression',
+  LET_EXPRESSION = 'letExpression',
+  FUNCTION_EXPRESSION = 'functionExpression',
+  CALL_EXPRESSION = 'callExpression',
+  LITERAL_EXPRESSION = 'literalExpression',
+  IDENTIFIER_EXPRESSION = 'identifierExpression',
 }
 
-export interface ASTNode {
-  readonly nodeType: ASTNodeType
+export interface TreeNode {
+  nodeType: TreeNodeType
+  symbol: LexicalSymbol
 }
 
-export class Program implements ASTNode {
-  readonly nodeType = ASTNodeType.PROGRAM
-  body: Statement[] = []
+export class Program implements TreeNode {
+  nodeType = TreeNodeType.PROGRAM
+
+  constructor(public symbol: LexicalSymbol, public body: Statement[]) {}
 }
 
-export abstract class Statement implements ASTNode {
-  abstract readonly nodeType: ASTNodeType
+export interface Statement extends TreeNode {}
+
+export class BlockStatement implements Statement {
+  nodeType = TreeNodeType.BLOCK_STATEMENT
+
+  constructor(public symbol: LexicalSymbol, public statements: Statement[]) {}
 }
 
-export class BlockStatement extends Statement {
-  readonly nodeType = ASTNodeType.BLOCK_STATEMENT
-  statements: Statement[] = []
+export class EmptyStatement implements Statement {
+  nodeType = TreeNodeType.EMPTY_STATEMENT
+
+  constructor(public symbol: LexicalSymbol) {}
 }
 
-export class EmptyStatement extends Statement {
-  readonly nodeType = ASTNodeType.EMPTY_STATEMENT
+export class ExpressionStatement implements Statement {
+  nodeType = TreeNodeType.EXPRESSION_STATEMENT
+
+  constructor(public symbol: LexicalSymbol, public expression: Expression) {}
 }
 
-export class ExpressionStatement extends Statement {
-  readonly nodeType = ASTNodeType.EXPRESSION_STATEMENT
-  expression!: Expression
+export class LetStatement implements Statement {
+  nodeType = TreeNodeType.LET_STATEMENT
+
+  constructor(public symbol: LexicalSymbol, public expression: LetExpression) {}
 }
 
-export class LetStatement extends Statement {
-  readonly nodeType = ASTNodeType.LET_STATEMENT
-  expression!: LetExpression
+export class FunctionStatement implements Statement {
+  nodeType = TreeNodeType.FUNCTION_STATEMENT
+
+  constructor(
+    public symbol: LexicalSymbol,
+    public identifier: LexicalSymbol,
+    public parameters: LexicalSymbol[],
+    public body: BlockStatement
+  ) {}
 }
 
-export class FuncDeclarationStatement extends Statement {
-  readonly nodeType = ASTNodeType.FUNC_DECLARATION_STATEMENT
-  identifier!: LexicalSymbol
-  parameters: LexicalSymbol[] = []
-  body!: BlockStatement
+export class IfStatement implements Statement {
+  nodeType = TreeNodeType.IF_STATEMENT
+
+  constructor(
+    public symbol: LexicalSymbol,
+    public condition: Expression,
+    public consequence: Statement,
+    public alternative: Statement | null = null
+  ) {}
 }
 
-export class IfStatement extends Statement {
-  readonly nodeType = ASTNodeType.IF_STATEMENT
-  condition!: Expression
-  consequence!: Statement
-  alternative: Statement | null = null
+export class ForStatement implements Statement {
+  nodeType = TreeNodeType.FOR_STATEMENT
+
+  constructor(
+    public symbol: LexicalSymbol,
+    public body: Statement,
+    public initialize: Expression | null = null,
+    public condition: Expression | null = null,
+    public afterEach: Expression | null = null
+  ) {}
 }
 
-export class ForStatement extends Statement {
-  readonly nodeType = ASTNodeType.FOR_STATEMENT
-  initialize: Expression | null = null
-  condition: Expression | null = null
-  afterEach: Expression | null = null
-  body!: Statement
+export class WhileStatement implements Statement {
+  nodeType = TreeNodeType.WHILE_STATEMENT
+
+  constructor(public symbol: LexicalSymbol, public condition: Expression, public body: Statement) {}
 }
 
-export class WhileStatement extends Statement {
-  readonly nodeType = ASTNodeType.WHILE_STATEMENT
-  condition!: Expression
-  body!: Statement
+export class ContinueStatement implements Statement {
+  nodeType = TreeNodeType.CONTINUE_STATEMENT
+
+  constructor(public symbol: LexicalSymbol) {}
 }
 
-export class ContinueStatement extends Statement {
-  readonly nodeType = ASTNodeType.CONTINUE_STATEMENT
+export class BreakStatement implements Statement {
+  nodeType = TreeNodeType.BREAK_STATEMENT
+
+  constructor(public symbol: LexicalSymbol) {}
 }
 
-export class BreakStatement extends Statement {
-  readonly nodeType = ASTNodeType.BREAK_STATEMENT
+export class ReturnStatement implements Statement {
+  nodeType = TreeNodeType.RETURN_STATEMENT
+
+  constructor(public symbol: LexicalSymbol, public returnValue: Expression | null = null) {}
 }
 
-export class ReturnStatement extends Statement {
-  readonly nodeType = ASTNodeType.RETURN_STATEMENT
-  returnValue: Expression | null = null
+export interface Expression extends TreeNode {}
+
+export class PrefixExpression implements Expression {
+  nodeType = TreeNodeType.PREFIX_EXPRESSION
+
+  constructor(
+    public symbol: LexicalSymbol,
+    public operator: LexicalSymbol,
+    public operand: Expression
+  ) {}
 }
 
-export abstract class Expression implements ASTNode {
-  abstract readonly nodeType: ASTNodeType
+export class InfixExpression implements Expression {
+  nodeType = TreeNodeType.INFIX_EXPRESSION
+
+  constructor(
+    public symbol: LexicalSymbol,
+    public operator: LexicalSymbol,
+    public left: Expression,
+    public right: Expression
+  ) {}
 }
 
-export class PrefixExpression extends Expression {
-  readonly nodeType = ASTNodeType.PREFIX_EXPRESSION
-  operator!: LexicalSymbol
-  operand!: Expression
+export class VariableDeclaration implements TreeNode {
+  nodeType = TreeNodeType.VARIABLE_DECLARATION
+
+  constructor(
+    public symbol: LexicalSymbol,
+    public identifier: LexicalSymbol,
+    public value: Expression | null
+  ) {}
 }
 
-export class InfixExpression extends Expression {
-  readonly nodeType = ASTNodeType.INFIX_EXPRESSION
-  operator!: LexicalSymbol
-  leftOperand!: Expression
-  rightOperand!: Expression
+export class LetExpression implements Expression {
+  nodeType = TreeNodeType.LET_EXPRESSION
+
+  constructor(
+    public symbol: LexicalSymbol,
+    public variableDeclarationSequence: VariableDeclaration[]
+  ) {}
 }
 
-export type VariableDeclaration = {
-  identifier: LexicalSymbol
-  value: Expression | null
+export class CallExpression implements Expression {
+  nodeType = TreeNodeType.CALL_EXPRESSION
+
+  constructor(
+    public symbol: LexicalSymbol,
+    public callable: Expression,
+    public args: Expression[]
+  ) {}
 }
 
-export class LetExpression extends Expression {
-  readonly nodeType = ASTNodeType.LET_EXPRESSION
-  variableDeclarationSequence: VariableDeclaration[] = []
+export class LiteralExpression implements Expression {
+  nodeType = TreeNodeType.LITERAL_EXPRESSION
+
+  constructor(public symbol: LexicalSymbol, public value: unknown) {}
 }
 
-export class CallExpression extends Expression {
-  readonly nodeType = ASTNodeType.CALL_EXPRESSION
-  callable!: Expression
-  arguments: Expression[] = []
+export class IdentifierExpression implements Expression {
+  nodeType = TreeNodeType.IDENTIFIER_EXPRESSION
+
+  constructor(public symbol: LexicalSymbol) {}
 }
 
-export class LiteralExpression extends Expression {
-  readonly nodeType = ASTNodeType.LITERAL_EXPRESSION
-  symbol!: LexicalSymbol
-  value: unknown
-}
+export class FunctionExpression implements Expression {
+  nodeType = TreeNodeType.FUNCTION_EXPRESSION
 
-export class IdentifierExpression extends Expression {
-  readonly nodeType = ASTNodeType.IDENTIFIER_EXPRESSION
-  symbol!: LexicalSymbol
-}
-
-export class FunctionExpression extends Expression {
-  readonly nodeType = ASTNodeType.FUNCTION_EXPRESSION
-  parameters: LexicalSymbol[] = []
-  body!: BlockStatement
+  constructor(
+    public symbol: LexicalSymbol,
+    public params: IdentifierExpression[],
+    public body: BlockStatement
+  ) {}
 }

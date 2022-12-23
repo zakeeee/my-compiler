@@ -8,7 +8,7 @@ statement
   | emptyStatement
   | expressionStatement
   | letStatement
-  | funcDeclarationStatement
+  | functionStatement
   | ifStatement
   | forStatement
   | whileStatement
@@ -29,7 +29,7 @@ letStatement: letExpression ';';
 
 parameters: (Identifier (',' Identifier)*)?;
 
-funcDeclarationStatement: FUNC Identifier '(' parameters ')' blockStatement;
+functionStatement: FUNC Identifier '(' parameters ')' blockStatement;
 
 ifStatement: IF '(' expression ')' statement (ELSE statement)?;
 

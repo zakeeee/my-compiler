@@ -1,14 +1,16 @@
 import { PopObject } from './models/types'
 
+export const uninitialized = Symbol()
+
 export class Scope {
-  private map = new Map<string, PopObject>()
+  private map = new Map<string, PopObject | typeof uninitialized>()
   private readonly outer: Scope | null
 
   constructor(outer?: Scope) {
     this.outer = outer || null
   }
 
-  getValue(name: string): PopObject | null {
+  getValue(name: string): PopObject | typeof uninitialized | null {
     const object = this.map.get(name)
     if (object) {
       return object
@@ -30,11 +32,11 @@ export class Scope {
     return this.outer.hasValue(name)
   }
 
-  getOwnValue(name: string): PopObject | null {
+  getOwnValue(name: string): PopObject | typeof uninitialized | null {
     return this.map.get(name) ?? null
   }
 
-  setOwnValue(name: string, object: PopObject): void {
+  setOwnValue(name: string, object: PopObject | typeof uninitialized): void {
     this.map.set(name, object)
   }
 
@@ -46,8 +48,7 @@ export class Scope {
    * 获取 name 对应的标识符所在作用域
    */
   getScope(name: string): Scope | null {
-    let result = this.map.has(name)
-    if (result) {
+    if (this.hasOwnValue(name)) {
       return this
     }
     if (!this.outer) {

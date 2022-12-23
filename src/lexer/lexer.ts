@@ -17,7 +17,7 @@ const escapeSequence = alternation(
 const stringCharacter = alternation(/[^"\\\r\n]/, concatenation(/\\/, escapeSequence))
 const stringLiteralRE = concatenation(/^"/, kleeneClosure(stringCharacter), /"/)
 
-type Position = {
+export type Position = {
   line: number
   column: number
 }

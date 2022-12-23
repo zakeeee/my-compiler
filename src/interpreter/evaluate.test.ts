@@ -24,29 +24,26 @@ describe('Evaluate', () => {
     // }
     // print(fib(10));
     //     `
-//     const input = `\
-// func gen(n) {
-//   let i = 0;
-//   return func () {
-//     if (i < n) {
-//       let ret = i;
-//       i = i + 1;
-//       return ret;
-//     } else {
-//       return null;
-//     }
-//   };
-// }
-// let g = gen(10);
-// let i = 0;
-// for (; i < 12; i = i + 1) {
-//   print(g());
-// }
-// `
-const input = `\
-let i = 0;
-i ^= 1;
-print(i);
+    const input = `\
+func gen(n) {
+  let i = 0;
+  return func () {
+    if (i < n) {
+      let ret = i;
+      i += 1;
+      return ret;
+    } else
+      return null;
+  };
+}
+let g1;
+g1 = gen(10);
+let g2 = gen(12);
+print(str(g1));
+for (let i = 0; i < 12; i += 1) {
+  print("====== g1", g1());
+  print("====== g2", g2());
+}
 `
     const lexer = new Lexer(input)
     const parser = new Parser(lexer)
