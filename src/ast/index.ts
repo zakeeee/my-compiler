@@ -17,6 +17,7 @@ export enum ASTNodeType {
 
   PREFIX_EXPRESSION = 'PrefixExpression',
   INFIX_EXPRESSION = 'InfixExpression',
+  LET_EXPRESSION = 'LetExpression',
   CALL_EXPRESSION = 'CallExpression',
   LITERAL_EXPRESSION = 'LiteralExpression',
   IDENTIFIER_EXPRESSION = 'IdentifierExpression',
@@ -52,8 +53,7 @@ export class ExpressionStatement extends Statement {
 
 export class LetStatement extends Statement {
   readonly nodeType = ASTNodeType.LET_STATEMENT
-  identifier!: LexicalSymbol
-  value!: Expression
+  expression!: LetExpression
 }
 
 export class FuncDeclarationStatement extends Statement {
@@ -112,6 +112,16 @@ export class InfixExpression extends Expression {
   operator!: LexicalSymbol
   leftOperand!: Expression
   rightOperand!: Expression
+}
+
+export type VariableDeclaration = {
+  identifier: LexicalSymbol
+  value: Expression | null
+}
+
+export class LetExpression extends Expression {
+  readonly nodeType = ASTNodeType.LET_EXPRESSION
+  variableDeclarationSequence: VariableDeclaration[] = []
 }
 
 export class CallExpression extends Expression {

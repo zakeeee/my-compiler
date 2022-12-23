@@ -44,6 +44,15 @@ export enum Token {
   BIT_NOT, // ~
   LOGIC_AND, // &&
   LOGIC_OR, // ||
+  MULTIPLY_EQUAL, // *=
+  DIVIDE_EQUAL, // /=
+  MODULO_EQUAL, // %=
+  PLUS_EQUAL, // +=
+  MINUS_EQUAL, // -=
+  BIT_AND_EQUAL, // &=
+  BIT_OR_EQUAL, // |=
+  BIT_XOR_EQUAL, // ^=
+
   COMMA, // ,
   SEMICOLON, // ;
   DOT, // .
@@ -102,6 +111,15 @@ const tokenNameMap = Object.freeze({
   [Token.BIT_NOT]: '~',
   [Token.LOGIC_AND]: '&&',
   [Token.LOGIC_OR]: '||',
+  [Token.MULTIPLY_EQUAL]: '*=',
+  [Token.DIVIDE_EQUAL]: '/=',
+  [Token.MODULO_EQUAL]: '%=',
+  [Token.PLUS_EQUAL]: '+=',
+  [Token.MINUS_EQUAL]: '-=',
+  [Token.BIT_AND_EQUAL]: '&=',
+  [Token.BIT_OR_EQUAL]: '|=',
+  [Token.BIT_XOR_EQUAL]: '^=',
+
   [Token.COMMA]: ',',
   [Token.SEMICOLON]: ';',
   [Token.DOT]: '.',

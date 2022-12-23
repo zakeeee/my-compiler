@@ -12,6 +12,7 @@ import {
   IdentifierExpression,
   IfStatement,
   InfixExpression,
+  LetExpression,
   LetStatement,
   LiteralExpression,
   PrefixExpression,
@@ -110,12 +111,7 @@ function evalExpressionStatement(stmt: ExpressionStatement, scope: Scope): PopOb
 }
 
 function evalLetStatement(stmt: LetStatement, scope: Scope): PopObject {
-  const name = stmt.identifier.literal
-  if (scope.hasOwnValue(name)) {
-    throw new Error(`duplicate variable "${name}"`)
-  }
-  const value = evalExpression(stmt.value, scope)
-  scope.setOwnValue(name, value)
+  evalLetExpression(stmt.expression, scope)
   return C_NULL
 }
 
@@ -209,6 +205,8 @@ function evalExpression(expr: Expression, scope: Scope): PopObject {
       return evalPrefixExpression(expr as PrefixExpression, scope)
     case ASTNodeType.INFIX_EXPRESSION:
       return evalInfixExpression(expr as InfixExpression, scope)
+    case ASTNodeType.LET_EXPRESSION:
+      return evalLetExpression(expr as LetExpression, scope)
     case ASTNodeType.CALL_EXPRESSION:
       return evalCallExpression(expr as CallExpression, scope)
     case ASTNodeType.LITERAL_EXPRESSION:
@@ -260,11 +258,31 @@ const infixOpTokenToSlotNameMap = {
   [Token.BIT_AND]: '$bitAnd',
   [Token.BIT_OR]: '$bitOr',
   [Token.BIT_XOR]: '$bitXor',
+  [Token.MULTIPLY_EQUAL]: '$multiply',
+  [Token.DIVIDE_EQUAL]: '$divide',
+  [Token.MODULO_EQUAL]: '$modulo',
+  [Token.PLUS_EQUAL]: '$add',
+  [Token.MINUS_EQUAL]: '$minus',
+  [Token.BIT_AND_EQUAL]: '$bitAnd',
+  [Token.BIT_OR_EQUAL]: '$bitOr',
+  [Token.BIT_XOR_EQUAL]: '$bitXor',
 } as Record<Token, string>
+
+const assignmentOperators = [
+  Token.MULTIPLY_EQUAL,
+  Token.DIVIDE_EQUAL,
+  Token.MODULO_EQUAL,
+  Token.PLUS_EQUAL,
+  Token.MINUS_EQUAL,
+  Token.BIT_AND_EQUAL,
+  Token.BIT_OR_EQUAL,
+  Token.BIT_XOR_EQUAL,
+]
 
 function evalInfixExpression(expr: InfixExpression, scope: Scope): PopObject {
   const rightOperand = evalExpression(expr.rightOperand, scope)
-  if (expr.operator.token === Token.ASSIGN) {
+  const { token } = expr.operator
+  if (token === Token.ASSIGN) {
     if (expr.leftOperand instanceof IdentifierExpression) {
       const name = expr.leftOperand.symbol.literal
       const targetScope = scope.getScope(name)
@@ -278,8 +296,34 @@ function evalInfixExpression(expr: InfixExpression, scope: Scope): PopObject {
     }
   }
 
+  if (assignmentOperators.includes(token)) {
+    if (expr.leftOperand instanceof IdentifierExpression) {
+      const name = expr.leftOperand.symbol.literal
+      const targetScope = scope.getScope(name)
+      if (!targetScope) {
+        throw new Error(`${name} is not defined`)
+      }
+      const leftOperand = targetScope.getValue(name)!
+      let value: PopObject
+      const slotName = infixOpTokenToSlotNameMap[token]
+      if (
+        slotName &&
+        slotName in leftOperand &&
+        typeof (leftOperand as any)[slotName] === 'function'
+      ) {
+        value = (leftOperand as any)[slotName].call(leftOperand, rightOperand)
+      } else {
+        throw new Error(`unsupported infix operation "${getTokenName(token)}"`)
+      }
+      targetScope.setOwnValue(name, value)
+      return C_NULL
+    } else {
+      throw new Error('cannot assign to lhs')
+    }
+  }
+
   const leftOperand = evalExpression(expr.leftOperand, scope)
-  switch (expr.operator.token) {
+  switch (token) {
     case Token.EQUAL:
       return leftOperand.$equal(rightOperand)
     case Token.NOT_EQUAL: {
@@ -296,7 +340,6 @@ function evalInfixExpression(expr: InfixExpression, scope: Scope): PopObject {
       return a.$unwrap() || b.$unwrap() ? C_TRUE : C_FALSE
     }
     default: {
-      const token = expr.operator.token
       const slotName = infixOpTokenToSlotNameMap[token]
       if (slotName && slotName in leftOperand) {
         const func = (leftOperand as any)[slotName]
@@ -307,6 +350,21 @@ function evalInfixExpression(expr: InfixExpression, scope: Scope): PopObject {
       throw new Error(`unsupported infix operation "${getTokenName(token)}"`)
     }
   }
+}
+
+function evalLetExpression(expr: LetExpression, scope: Scope): PopObject {
+  const arr = expr.variableDeclarationSequence
+  arr.forEach((item) => {
+    const name = item.identifier.literal
+    if (scope.hasOwnValue(name)) {
+      throw new Error(`duplicate variable "${name}"`)
+    }
+    if (item.value) {
+      const value = evalExpression(item.value, scope)
+      scope.setOwnValue(name, value)
+    }
+  })
+  return C_NULL
 }
 
 function evalCallExpression(expr: CallExpression, scope: Scope): PopObject {

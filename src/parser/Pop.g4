@@ -25,7 +25,7 @@ emptyStatement: ';';
 
 expressionStatement: expressionSequence ';';
 
-letStatement: LET Identifier '=' expression;
+letStatement: letExpression ';';
 
 parameters: (Identifier (',' Identifier)*)?;
 
@@ -37,17 +37,18 @@ forStatement: FOR '(' expression? ';' expression? ';' expression? ')' statement;
 
 whileStatement: WHILE '(' expression ')' statement;
 
-continueStatement: CONTINUE;
+continueStatement: CONTINUE ';';
 
-breakStatement: BREAK;
+breakStatement: BREAK ';';
 
-returnStatement: RETURN expression?;
+returnStatement: RETURN expression? ';';
 
 expressionSequence: expression (',' expression)*;
 
 expression
   : prefixExpression
   | infixExpression
+  | letExpression
   | functionExpression
   | callExpression
   | literalExpression
@@ -67,8 +68,15 @@ infixExpression
   | expression '^' expression
   | expression '&&' expression
   | expression '||' expression
-  | expression '=' expressionSequence
+  | expression '=' expression
+  | expression ('*=' | '/=' | '%=' | '+=' | '-=' | '&=' | '|=' | '^=') expression
   ;
+
+variableDeclaration: Identifier ('=' expression)?;
+
+variableDeclarationSequence: variableDeclaration (',' variableDeclaration)*;
+
+letExpression: LET variableDeclarationSequence;
 
 functionExpression: FUNC '(' parameters ')' blockStatement;
 

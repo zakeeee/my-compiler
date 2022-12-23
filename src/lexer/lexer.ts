@@ -141,12 +141,24 @@ export default class Lexer {
           return createLexerSymbol(Token.GREATER_THAN, ch, startPos, this.getPos())
         }
         case '+': {
+          if (this.offset < source.length && source[this.offset] === '=') {
+            this.offset++
+            return createLexerSymbol(Token.PLUS_EQUAL, '+=', startPos, this.getPos())
+          }
           return createLexerSymbol(Token.PLUS, ch, startPos, this.getPos())
         }
         case '-': {
+          if (this.offset < source.length && source[this.offset] === '=') {
+            this.offset++
+            return createLexerSymbol(Token.MINUS_EQUAL, '-=', startPos, this.getPos())
+          }
           return createLexerSymbol(Token.MINUS, ch, startPos, this.getPos())
         }
         case '*': {
+          if (this.offset < source.length && source[this.offset] === '=') {
+            this.offset++
+            return createLexerSymbol(Token.MULTIPLY_EQUAL, '*=', startPos, this.getPos())
+          }
           return createLexerSymbol(Token.ASTERISK, ch, startPos, this.getPos())
         }
         case '/': {
@@ -164,12 +176,20 @@ export default class Lexer {
             }
             return this.nextSymbol()
           }
+          if (this.offset < source.length && source[this.offset] === '=') {
+            this.offset++
+            return createLexerSymbol(Token.DIVIDE_EQUAL, '/=', startPos, this.getPos())
+          }
           return createLexerSymbol(Token.SLASH, ch, startPos, this.getPos())
         }
         case '\\': {
           return createLexerSymbol(Token.BACK_SLASH, ch, startPos, this.getPos())
         }
         case '%': {
+          if (this.offset < source.length && source[this.offset] === '=') {
+            this.offset++
+            return createLexerSymbol(Token.MODULO_EQUAL, '%=', startPos, this.getPos())
+          }
           return createLexerSymbol(Token.PERCENT, ch, startPos, this.getPos())
         }
         case '=': {
@@ -191,6 +211,10 @@ export default class Lexer {
             this.offset++
             return createLexerSymbol(Token.LOGIC_AND, '&&', startPos, this.getPos())
           }
+          if (this.offset < source.length && source[this.offset] === '=') {
+            this.offset++
+            return createLexerSymbol(Token.BIT_AND_EQUAL, '&=', startPos, this.getPos())
+          }
           return createLexerSymbol(Token.BIT_AND, ch, startPos, this.getPos())
         }
         case '|': {
@@ -198,9 +222,17 @@ export default class Lexer {
             this.offset++
             return createLexerSymbol(Token.LOGIC_OR, '||', startPos, this.getPos())
           }
+          if (this.offset < source.length && source[this.offset] === '=') {
+            this.offset++
+            return createLexerSymbol(Token.BIT_OR_EQUAL, '|=', startPos, this.getPos())
+          }
           return createLexerSymbol(Token.BIT_OR, ch, startPos, this.getPos())
         }
         case '^': {
+          if (this.offset < source.length && source[this.offset] === '=') {
+            this.offset++
+            return createLexerSymbol(Token.BIT_XOR_EQUAL, '^=', startPos, this.getPos())
+          }
           return createLexerSymbol(Token.BIT_XOR, ch, startPos, this.getPos())
         }
         case '~': {

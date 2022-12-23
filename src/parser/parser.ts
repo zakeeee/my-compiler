@@ -12,12 +12,14 @@ import {
   IdentifierExpression,
   IfStatement,
   InfixExpression,
+  LetExpression,
   LetStatement,
   LiteralExpression,
   PrefixExpression,
   Program,
   ReturnStatement,
   Statement,
+  VariableDeclaration,
   WhileStatement,
 } from '../ast'
 import { getTokenName, Lexer, LexicalSymbol, Token } from '../lexer'
@@ -44,6 +46,7 @@ class UnexpectedTokenError extends ParseError {
 
 enum Precedence {
   LOWEST,
+  ASSIGNMENT_OP, // *=, /=, %=, +=, -=, &=, |=, ^=
   ASSIGN, // =
   LOGIC_OP, // &&, ||
   BIT_OP, // &, |, ^
@@ -56,6 +59,14 @@ enum Precedence {
 }
 
 const precedences = {
+  [Token.MULTIPLY_EQUAL]: Precedence.ASSIGNMENT_OP,
+  [Token.DIVIDE_EQUAL]: Precedence.ASSIGNMENT_OP,
+  [Token.MODULO_EQUAL]: Precedence.ASSIGNMENT_OP,
+  [Token.PLUS_EQUAL]: Precedence.ASSIGNMENT_OP,
+  [Token.MINUS_EQUAL]: Precedence.ASSIGNMENT_OP,
+  [Token.BIT_AND_EQUAL]: Precedence.ASSIGNMENT_OP,
+  [Token.BIT_OR_EQUAL]: Precedence.ASSIGNMENT_OP,
+  [Token.BIT_XOR_EQUAL]: Precedence.ASSIGNMENT_OP,
   [Token.ASSIGN]: Precedence.ASSIGN,
   [Token.LOGIC_AND]: Precedence.LOGIC_OP,
   [Token.LOGIC_OR]: Precedence.LOGIC_OP,
@@ -96,6 +107,7 @@ export class Parser {
       }
     )
     this.prefixParseFuncs.set(Token.L_PAREN, this.parseGroupedExpression.bind(this))
+    this.prefixParseFuncs.set(Token.LET, this.parseLetExpression.bind(this))
     this.prefixParseFuncs.set(Token.FUNC, this.parseFunctionExpression.bind(this))
     ;[
       Token.ASSIGN,
@@ -115,6 +127,14 @@ export class Parser {
       Token.ASTERISK,
       Token.SLASH,
       Token.PERCENT,
+      Token.MULTIPLY_EQUAL,
+      Token.DIVIDE_EQUAL,
+      Token.MODULO_EQUAL,
+      Token.PLUS_EQUAL,
+      Token.MINUS_EQUAL,
+      Token.BIT_AND_EQUAL,
+      Token.BIT_OR_EQUAL,
+      Token.BIT_XOR_EQUAL,
     ].forEach((token) => {
       this.infixParseFuncs.set(token, this.parseInfixExpression.bind(this))
     })
@@ -179,10 +199,7 @@ export class Parser {
 
   private parseLetStatement(): LetStatement {
     const statement = new LetStatement()
-    this.parseToken(Token.LET)
-    statement.identifier = this.parseIdentifier()
-    this.parseToken(Token.ASSIGN)
-    statement.value = this.parseExpression(Precedence.LOWEST)
+    statement.expression = this.parseLetExpression()
     this.parseToken(Token.SEMICOLON)
     return statement
   }
@@ -336,7 +353,7 @@ export class Parser {
     return expr
   }
 
-  private parsePrefixExpression(): Expression {
+  private parsePrefixExpression(): PrefixExpression {
     const expr = new PrefixExpression()
     expr.operator = { ...this.currentSymbol }
     this.readNextSymbol()
@@ -344,13 +361,42 @@ export class Parser {
     return expr
   }
 
-  private parseInfixExpression(left: Expression): Expression {
+  private parseInfixExpression(left: Expression): InfixExpression {
     const expr = new InfixExpression()
     expr.leftOperand = left
     expr.operator = { ...this.currentSymbol }
     const precedence = this.currentPrecedence()
     this.readNextSymbol()
     expr.rightOperand = this.parseExpression(precedence)
+    return expr
+  }
+
+  private parseLetExpression(): LetExpression {
+    const expr = new LetExpression()
+    this.parseToken(Token.LET)
+    const arr: VariableDeclaration[] = []
+    let identifier: LexicalSymbol
+    let value: Expression | null
+    identifier = this.parseIdentifier()
+    if (this.currentTokenIs(Token.ASSIGN)) {
+      this.parseToken(Token.ASSIGN)
+      value = this.parseExpression(Precedence.LOWEST)
+    } else {
+      value = null
+    }
+    arr.push({ identifier, value })
+    while (this.currentTokenIs(Token.COMMA)) {
+      this.parseToken(Token.COMMA)
+      identifier = this.parseIdentifier()
+      if (this.currentTokenIs(Token.ASSIGN)) {
+        this.parseToken(Token.ASSIGN)
+        value = this.parseExpression(Precedence.LOWEST)
+      } else {
+        value = null
+      }
+      arr.push({ identifier, value })
+    }
+    expr.variableDeclarationSequence = arr
     return expr
   }
 

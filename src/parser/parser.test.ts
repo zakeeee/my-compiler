@@ -52,23 +52,22 @@ let foo2 = func () {
 
   test('parse', () => {
     const input = `\
-let a = 0;
-let b = 1;
-a = 1;
-b = 2;
-if (a < 1) {
-  print("a < 1");
-} else {
-  print("a >= 1");
-}
-for (;;) {}
-for (; a < 10; a = a + 1) {
-  print(a);
-}
-while (a < 20) {
-  print(a);
-}
-(func (x, y) { return x + y; })(1,2);
+let a = 0, b = 1;
+let c;
+c = 2;
+// if (a < 1) {
+//   print("a < 1");
+// } else {
+//   print("a >= 1");
+// }
+// for (;;) {}
+// for (; a < 10; a = a + 1) {
+//   print(a);
+// }
+// while (a < 20) {
+//   print(a);
+// }
+// (func (x, y) { return x + y; })(1,2);
 `
     const lexer = new Lexer(input)
     const parser = new Parser(lexer)
