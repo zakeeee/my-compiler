@@ -1,2 +1,2 @@
-export { default as Lexer, LexerSymbol } from './lexer'
+export { default as Lexer, LexicalSymbol } from './lexer'
 export { Token, getTokenName } from './token'

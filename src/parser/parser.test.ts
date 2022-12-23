@@ -1,10 +1,10 @@
 import { Lexer } from '../lexer'
-import { describe, it } from 'vitest'
+import { describe, test } from 'vitest'
 import { Parser } from './parser'
 import { inspect } from 'node:util'
 
 describe('Parser', () => {
-  it('should parse let statement', () => {
+  test('let statement', () => {
     const input = `\
 let a = 1;
 let b = "12321312";
@@ -19,7 +19,7 @@ let f = e(1, 2, bar("asdf", foo));
     // console.log(inspect(prog, false, null));
   })
 
-  it('should parse func declaration statement', () => {
+  test('func declaration statement', () => {
     const input = `\
 func foo() {
   func bar(x, y) {
@@ -37,7 +37,7 @@ let foo2 = func () {
     // console.log(inspect(prog, false, null));
   })
 
-  it('should parse unary expression', () => {
+  test('unary expression', () => {
     const input = `\
 +1;
 -(+foo);
@@ -50,7 +50,7 @@ let foo2 = func () {
     // console.log(inspect(prog, false, null));
   })
 
-  it('should parse', () => {
+  test('parse', () => {
     const input = `\
 let a = 0;
 let b = 1;

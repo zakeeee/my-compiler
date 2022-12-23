@@ -125,7 +125,7 @@ function evalFuncDeclarationStatement(stmt: FuncDeclarationStatement, scope: Sco
     throw new Error(`duplicate function "${name}"`)
   }
   const parameters = stmt.parameters.map((param) => param.literal)
-  const func = new PopFunctionImpl(parameters, stmt.body, name)
+  const func = new PopFunctionImpl(parameters, stmt.body, scope, name)
   scope.setOwnValue(name, func)
   return C_NULL
 }
@@ -326,7 +326,7 @@ function evalCallExpression(expr: CallExpression, scope: Scope): PopObject {
     return func.$call(args)
   }
 
-  const funcScope = new Scope(scope)
+  const funcScope = new Scope(func.scope)
   func.$parameters.forEach((paramName, idx) => {
     funcScope.setOwnValue(paramName, args[idx])
   })
@@ -377,5 +377,5 @@ function evalIdentifierExpression(expr: IdentifierExpression, scope: Scope): Pop
 
 function evalFunctionExpression(expr: FunctionExpression, scope: Scope): PopFunction {
   const parameters = expr.parameters.map((param) => param.literal)
-  return new PopFunctionImpl(parameters, expr.body)
+  return new PopFunctionImpl(parameters, expr.body, scope)
 }

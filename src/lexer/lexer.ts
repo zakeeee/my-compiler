@@ -22,7 +22,7 @@ type Position = {
   column: number
 }
 
-export type LexerSymbol = {
+export type LexicalSymbol = {
   token: Token
   literal: string
   start: Position
@@ -61,7 +61,7 @@ export default class Lexer {
 
   constructor(private source: string) {}
 
-  nextSymbol(): LexerSymbol {
+  nextSymbol(): LexicalSymbol {
     this.skipWhitespace()
 
     const { source } = this
@@ -150,6 +150,20 @@ export default class Lexer {
           return createLexerSymbol(Token.ASTERISK, ch, startPos, this.getPos())
         }
         case '/': {
+          if (this.offset < source.length && source[this.offset] === '/') {
+            this.offset++
+            // 注释
+            while (this.offset < source.length) {
+              const ch = source[this.offset]
+              if (ch === '\n') {
+                this.lineOffset = this.offset
+                this.offset++
+                break
+              }
+              this.offset++
+            }
+            return this.nextSymbol()
+          }
           return createLexerSymbol(Token.SLASH, ch, startPos, this.getPos())
         }
         case '\\': {

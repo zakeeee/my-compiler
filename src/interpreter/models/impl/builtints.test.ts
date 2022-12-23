@@ -7,6 +7,7 @@ import { C_NULL } from './null'
 import PopNumberImpl from './number'
 import PopStringImpl from './string'
 import { ObjectType } from '../types'
+import { Scope } from 'src/interpreter/scope'
 
 const { len, type, str } = builtinFunctions
 
@@ -31,7 +32,7 @@ describe('Builtins', () => {
     const _str = new PopStringImpl('123')
     expect(type.$call([_str]).$equal(new PopStringImpl(ObjectType.STRING))).toBe(C_TRUE)
 
-    const _func = new PopFunctionImpl([], new BlockStatement(), 'foo')
+    const _func = new PopFunctionImpl([], new BlockStatement(), new Scope(), 'foo')
     expect(type.$call([_func]).$equal(new PopStringImpl(ObjectType.FUNCTION))).toBe(C_TRUE)
   })
 
@@ -50,7 +51,7 @@ describe('Builtins', () => {
     const _str = new PopStringImpl('123')
     expect(str.$call([_str]).$equal(new PopStringImpl('123'))).toBe(C_TRUE)
 
-    const _func = new PopFunctionImpl([], new BlockStatement(), 'foo')
+    const _func = new PopFunctionImpl([], new BlockStatement(), new Scope(), 'foo')
     expect(str.$call([_func]).$equal(new PopStringImpl(`<Function foo>`))).toBe(C_TRUE)
   })
 })

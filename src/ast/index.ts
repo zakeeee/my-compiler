@@ -1,4 +1,4 @@
-import { LexerSymbol } from '../lexer'
+import { LexicalSymbol } from '../lexer'
 
 export enum ASTNodeType {
   PROGRAM = 'Program',
@@ -52,14 +52,14 @@ export class ExpressionStatement extends Statement {
 
 export class LetStatement extends Statement {
   readonly nodeType = ASTNodeType.LET_STATEMENT
-  identifier!: LexerSymbol
+  identifier!: LexicalSymbol
   value!: Expression
 }
 
 export class FuncDeclarationStatement extends Statement {
   readonly nodeType = ASTNodeType.FUNC_DECLARATION_STATEMENT
-  identifier!: LexerSymbol
-  parameters: LexerSymbol[] = []
+  identifier!: LexicalSymbol
+  parameters: LexicalSymbol[] = []
   body!: BlockStatement
 }
 
@@ -103,13 +103,13 @@ export abstract class Expression implements ASTNode {
 
 export class PrefixExpression extends Expression {
   readonly nodeType = ASTNodeType.PREFIX_EXPRESSION
-  operator!: LexerSymbol
+  operator!: LexicalSymbol
   operand!: Expression
 }
 
 export class InfixExpression extends Expression {
   readonly nodeType = ASTNodeType.INFIX_EXPRESSION
-  operator!: LexerSymbol
+  operator!: LexicalSymbol
   leftOperand!: Expression
   rightOperand!: Expression
 }
@@ -122,17 +122,17 @@ export class CallExpression extends Expression {
 
 export class LiteralExpression extends Expression {
   readonly nodeType = ASTNodeType.LITERAL_EXPRESSION
-  symbol!: LexerSymbol
+  symbol!: LexicalSymbol
   value: unknown
 }
 
 export class IdentifierExpression extends Expression {
   readonly nodeType = ASTNodeType.IDENTIFIER_EXPRESSION
-  symbol!: LexerSymbol
+  symbol!: LexicalSymbol
 }
 
 export class FunctionExpression extends Expression {
   readonly nodeType = ASTNodeType.FUNCTION_EXPRESSION
-  parameters: LexerSymbol[] = []
+  parameters: LexicalSymbol[] = []
   body!: BlockStatement
 }

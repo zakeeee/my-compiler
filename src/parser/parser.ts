@@ -20,11 +20,11 @@ import {
   Statement,
   WhileStatement,
 } from '../ast'
-import { getTokenName, Lexer, LexerSymbol, Token } from '../lexer'
+import { getTokenName, Lexer, LexicalSymbol, Token } from '../lexer'
 
 // TODO Better Error Handling
 class ParseError extends Error {
-  constructor(symbol: LexerSymbol) {
+  constructor(symbol: LexicalSymbol) {
     super('parse error')
     console.log('current symbol:', symbol)
     this.name = 'ParseError'
@@ -32,7 +32,7 @@ class ParseError extends Error {
 }
 
 class UnexpectedTokenError extends ParseError {
-  constructor(symbol: LexerSymbol, expectedToken: Token) {
+  constructor(symbol: LexicalSymbol, expectedToken: Token) {
     super(symbol)
     const { start, token } = symbol
     this.message = `expect token "${getTokenName(expectedToken)}", got "${getTokenName(
@@ -77,8 +77,8 @@ const precedences = {
 } as Readonly<Record<Token, Precedence>>
 
 export class Parser {
-  private currentSymbol!: LexerSymbol
-  private nextSymbol!: LexerSymbol
+  private currentSymbol!: LexicalSymbol
+  private nextSymbol!: LexicalSymbol
   private prefixParseFuncs = new Map<Token, () => Expression>()
   private infixParseFuncs = new Map<Token, (left: Expression) => Expression>()
 
@@ -192,7 +192,7 @@ export class Parser {
     this.parseToken(Token.FUNC)
     stmt.identifier = this.parseIdentifier()
     this.parseToken(Token.L_PAREN)
-    const parameters: LexerSymbol[] = []
+    const parameters: LexicalSymbol[] = []
     if (!this.currentTokenIs(Token.R_PAREN)) {
       parameters.push(this.parseIdentifier())
       while (this.currentTokenIs(Token.COMMA)) {
@@ -298,7 +298,7 @@ export class Parser {
     const expr = new FunctionExpression()
     this.parseToken(Token.FUNC)
     this.parseToken(Token.L_PAREN)
-    const parameters: LexerSymbol[] = []
+    const parameters: LexicalSymbol[] = []
     if (!this.currentTokenIs(Token.R_PAREN)) {
       parameters.push(this.parseIdentifier())
       while (this.currentTokenIs(Token.COMMA)) {
@@ -390,7 +390,7 @@ export class Parser {
     this.readNextSymbol()
   }
 
-  private parseIdentifier(): LexerSymbol {
+  private parseIdentifier(): LexicalSymbol {
     if (this.currentSymbol.token !== Token.IDENTIFIER) {
       throw new UnexpectedTokenError(this.currentSymbol, Token.IDENTIFIER)
     }

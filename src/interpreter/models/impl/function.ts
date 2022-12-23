@@ -1,4 +1,5 @@
 import { BlockStatement } from 'src/ast'
+import { Scope } from 'src/interpreter/scope'
 import { ObjectType, PopBoolean, PopFunction, PopObject, PopString } from '../types'
 import { C_FALSE, C_TRUE } from './boolean'
 import PopStringImpl from './string'
@@ -7,6 +8,7 @@ export default class PopFunctionImpl implements PopFunction {
   constructor(
     private parameters: string[],
     readonly body: BlockStatement,
+    readonly scope: Scope,
     private identifier?: string
   ) {}
 
