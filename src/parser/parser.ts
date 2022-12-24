@@ -22,7 +22,6 @@ import {
   Program,
   ReturnStatement,
   Statement,
-  StringLiteralExpression,
   VariableDeclaration,
   WhileStatement,
 } from '../ast'
@@ -93,79 +92,98 @@ const precedences = {
   [Token.L_BRACKET]: Precedence.INDEX,
 } as Readonly<Record<Token, Precedence>>
 
+const copySymbol = (symbol: LexicalSymbol): LexicalSymbol => {
+  const { token, literal, start, end } = symbol
+  return {
+    token,
+    literal,
+    start: { ...start },
+    end: { ...end },
+  }
+}
+
 export class Parser {
-  private currentSymbol!: LexicalSymbol
-  private nextSymbol!: LexicalSymbol
+  private curSymbol!: LexicalSymbol
+  private peekSymbol!: LexicalSymbol
   private prefixParseFuncs = new Map<Token, () => Expression>()
   private infixParseFuncs = new Map<Token, (left: Expression) => Expression>()
 
   constructor(private lexer: Lexer) {
-    // 初始化 currentSymbol 和 nextSymbol
+    // 初始化 curSymbol 和 peekSymbol
     this.readNextSymbol()
     this.readNextSymbol()
-    ;[Token.PLUS, Token.MINUS, Token.NOT, Token.BIT_NOT].forEach((token) => {
-      this.prefixParseFuncs.set(token, this.parsePrefixExpression.bind(this))
-    })
-    this.prefixParseFuncs.set(Token.IDENTIFIER, this.parseIdentifierExpression.bind(this))
-    ;[Token.NULL, Token.TRUE, Token.FALSE, Token.NUMBER_LITERAL, Token.STRING_LITERAL].forEach(
-      (token) => {
-        this.prefixParseFuncs.set(token, this.parseLiteralExpression.bind(this))
-      }
-    )
-    this.prefixParseFuncs.set(Token.L_PAREN, this.parseGroupedExpression.bind(this))
-    this.prefixParseFuncs.set(Token.L_BRACKET, this.parseArrayExpression.bind(this))
-    this.prefixParseFuncs.set(Token.L_BRACE, this.parseHashExpression.bind(this))
-    this.prefixParseFuncs.set(Token.LET, this.parseLetExpression.bind(this))
-    this.prefixParseFuncs.set(Token.FUNC, this.parseFunctionExpression.bind(this))
-    ;[
-      Token.ASSIGN,
-      Token.LOGIC_AND,
-      Token.LOGIC_OR,
-      Token.BIT_AND,
-      Token.BIT_OR,
-      Token.BIT_XOR,
-      Token.EQUAL,
-      Token.NOT_EQUAL,
-      Token.LESS_THAN,
-      Token.LESS_THAN_EQUAL,
-      Token.GREATER_THAN,
-      Token.GREATER_THAN_EQUAL,
-      Token.PLUS,
-      Token.MINUS,
-      Token.ASTERISK,
-      Token.SLASH,
-      Token.PERCENT,
-      Token.MULTIPLY_EQUAL,
-      Token.DIVIDE_EQUAL,
-      Token.MODULO_EQUAL,
-      Token.PLUS_EQUAL,
-      Token.MINUS_EQUAL,
-      Token.BIT_AND_EQUAL,
-      Token.BIT_OR_EQUAL,
-      Token.BIT_XOR_EQUAL,
-    ].forEach((token) => {
-      this.infixParseFuncs.set(token, this.parseInfixExpression.bind(this))
-    })
-    this.infixParseFuncs.set(Token.L_PAREN, this.parseCallExpression.bind(this))
-    this.infixParseFuncs.set(Token.L_BRACKET, this.parseIndexExpression.bind(this))
+
+    this.registerExpressionParseFunctions()
   }
 
-  parseProgram(): Program {
-    const symbol = { ...this.currentSymbol }
+  private registerExpressionParseFunctions() {
+    // prefix
+    this.prefixParseFuncs.set(Token.IDENTIFIER, this.parseIdentifierExpression)
+    this.prefixParseFuncs.set(Token.LET, this.parseLetExpression)
+    this.prefixParseFuncs.set(Token.L_PAREN, this.parseGroupedExpression)
+    this.prefixParseFuncs.set(Token.FUNC, this.parseFunctionExpression)
+    this.prefixParseFuncs.set(Token.L_BRACKET, this.parseArrayExpression)
+    this.prefixParseFuncs.set(Token.L_BRACE, this.parseHashExpression)
+
+    this.prefixParseFuncs.set(Token.NULL, this.parseLiteralExpression)
+    this.prefixParseFuncs.set(Token.TRUE, this.parseLiteralExpression)
+    this.prefixParseFuncs.set(Token.FALSE, this.parseLiteralExpression)
+    this.prefixParseFuncs.set(Token.NUMBER_LITERAL, this.parseLiteralExpression)
+    this.prefixParseFuncs.set(Token.STRING_LITERAL, this.parseLiteralExpression)
+
+    this.prefixParseFuncs.set(Token.PLUS, this.parsePrefixExpression)
+    this.prefixParseFuncs.set(Token.MINUS, this.parsePrefixExpression)
+    this.prefixParseFuncs.set(Token.NOT, this.parsePrefixExpression)
+    this.prefixParseFuncs.set(Token.BIT_NOT, this.parsePrefixExpression)
+
+    // infix
+    this.infixParseFuncs.set(Token.ASSIGN, this.parseInfixExpression)
+    this.infixParseFuncs.set(Token.LOGIC_AND, this.parseInfixExpression)
+    this.infixParseFuncs.set(Token.LOGIC_OR, this.parseInfixExpression)
+    this.infixParseFuncs.set(Token.BIT_AND, this.parseInfixExpression)
+    this.infixParseFuncs.set(Token.BIT_OR, this.parseInfixExpression)
+    this.infixParseFuncs.set(Token.BIT_XOR, this.parseInfixExpression)
+    this.infixParseFuncs.set(Token.EQUAL, this.parseInfixExpression)
+    this.infixParseFuncs.set(Token.NOT_EQUAL, this.parseInfixExpression)
+    this.infixParseFuncs.set(Token.LESS_THAN, this.parseInfixExpression)
+    this.infixParseFuncs.set(Token.LESS_THAN_EQUAL, this.parseInfixExpression)
+    this.infixParseFuncs.set(Token.GREATER_THAN, this.parseInfixExpression)
+    this.infixParseFuncs.set(Token.GREATER_THAN_EQUAL, this.parseInfixExpression)
+    this.infixParseFuncs.set(Token.PLUS, this.parseInfixExpression)
+    this.infixParseFuncs.set(Token.MINUS, this.parseInfixExpression)
+    this.infixParseFuncs.set(Token.ASTERISK, this.parseInfixExpression)
+    this.infixParseFuncs.set(Token.SLASH, this.parseInfixExpression)
+    this.infixParseFuncs.set(Token.PERCENT, this.parseInfixExpression)
+    this.infixParseFuncs.set(Token.MULTIPLY_EQUAL, this.parseInfixExpression)
+    this.infixParseFuncs.set(Token.DIVIDE_EQUAL, this.parseInfixExpression)
+    this.infixParseFuncs.set(Token.MODULO_EQUAL, this.parseInfixExpression)
+    this.infixParseFuncs.set(Token.PLUS_EQUAL, this.parseInfixExpression)
+    this.infixParseFuncs.set(Token.MINUS_EQUAL, this.parseInfixExpression)
+    this.infixParseFuncs.set(Token.BIT_AND_EQUAL, this.parseInfixExpression)
+    this.infixParseFuncs.set(Token.BIT_OR_EQUAL, this.parseInfixExpression)
+    this.infixParseFuncs.set(Token.BIT_XOR_EQUAL, this.parseInfixExpression)
+
+    this.infixParseFuncs.set(Token.L_PAREN, this.parseCallExpression)
+    this.infixParseFuncs.set(Token.L_BRACKET, this.parseIndexExpression)
+  }
+
+  parseProgram = (): Program => {
+    const symbol = copySymbol(this.curSymbol)
     const statements: Statement[] = []
-    while (!this.currentTokenIs(Token.EOF)) {
+    while (!this.curTokenIs(Token.EOF)) {
       const statement = this.parseStatement()
       statements.push(statement)
+      this.readNextSymbol()
     }
     return new Program(symbol, statements)
   }
 
-  private parseStatement(): Statement {
-    switch (this.currentSymbol.token) {
+  private parseStatement = (): Statement => {
+    switch (this.curSymbol.token) {
       case Token.L_BRACE:
         return this.parseBlockStatement()
       case Token.SEMICOLON:
-        return new EmptyStatement({ ...this.currentSymbol })
+        return new EmptyStatement(copySymbol(this.curSymbol))
       case Token.LET:
         return this.parseLetStatement()
       case Token.FUNC:
@@ -187,348 +205,452 @@ export class Parser {
     }
   }
 
-  private parseBlockStatement(): BlockStatement {
-    const symbol = { ...this.currentSymbol }
-    this.parseToken(Token.L_BRACE)
+  private parseBlockStatement = (): BlockStatement => {
+    const symbol = copySymbol(this.curSymbol)
     const statements: Statement[] = []
-    while (!this.currentTokenIs(Token.R_BRACE)) {
+    while (!this.peekTokenIs(Token.R_BRACE)) {
+      this.readNextSymbol()
       const statement = this.parseStatement()
       statements.push(statement)
     }
-    this.parseToken(Token.R_BRACE)
+    if (!this.expectPeek(Token.R_BRACE)) {
+      throw new UnexpectedTokenError(this.peekSymbol, Token.R_BRACE)
+    }
     return new BlockStatement(symbol, statements)
   }
 
-  private parseExpressionStatement(): ExpressionStatement {
-    const symbol = { ...this.currentSymbol }
+  private parseExpressionStatement = (): ExpressionStatement => {
+    const symbol = copySymbol(this.curSymbol)
     const expression = this.parseExpression(Precedence.LOWEST)
-    this.parseToken(Token.SEMICOLON)
+    if (!this.expectPeek(Token.SEMICOLON)) {
+      throw new UnexpectedTokenError(this.peekSymbol, Token.SEMICOLON)
+    }
     return new ExpressionStatement(symbol, expression)
   }
 
-  private parseLetStatement(): LetStatement {
-    const symbol = { ...this.currentSymbol }
+  private parseLetStatement = (): LetStatement => {
+    const symbol = copySymbol(this.curSymbol)
     const expression = this.parseLetExpression()
-    this.parseToken(Token.SEMICOLON)
+    if (!this.expectPeek(Token.SEMICOLON)) {
+      throw new UnexpectedTokenError(this.peekSymbol, Token.SEMICOLON)
+    }
     return new LetStatement(symbol, expression)
   }
 
-  private parseFunctionStatement(): FunctionStatement {
-    const symbol = { ...this.currentSymbol }
-    this.parseToken(Token.FUNC)
+  private parseFunctionStatement = (): FunctionStatement => {
+    const symbol = copySymbol(this.curSymbol)
+
+    this.readNextSymbol()
     const identifier = this.parseIdentifier()
-    this.parseToken(Token.L_PAREN)
+
+    if (!this.expectPeek(Token.L_PAREN)) {
+      throw new UnexpectedTokenError(this.peekSymbol, Token.L_PAREN)
+    }
+
     const parameters: LexicalSymbol[] = []
-    if (!this.currentTokenIs(Token.R_PAREN)) {
+    if (!this.peekTokenIs(Token.R_PAREN)) {
+      this.readNextSymbol()
       parameters.push(this.parseIdentifier())
-      while (this.currentTokenIs(Token.COMMA)) {
-        this.parseToken(Token.COMMA)
+
+      while (this.peekTokenIs(Token.COMMA)) {
+        this.readNextSymbol()
+
+        this.readNextSymbol()
         parameters.push(this.parseIdentifier())
       }
     }
-    this.parseToken(Token.R_PAREN)
+    if (!this.expectPeek(Token.R_PAREN)) {
+      throw new UnexpectedTokenError(this.peekSymbol, Token.R_PAREN)
+    }
+
+    if (!this.expectPeek(Token.L_BRACE)) {
+      throw new UnexpectedTokenError(this.peekSymbol, Token.L_BRACE)
+    }
     const body = this.parseBlockStatement()
     return new FunctionStatement(symbol, identifier, parameters, body)
   }
 
-  private parseIfStatement(): IfStatement {
-    const symbol = { ...this.currentSymbol }
-    this.parseToken(Token.IF)
-    this.parseToken(Token.L_PAREN)
+  private parseIfStatement = (): IfStatement => {
+    const symbol = copySymbol(this.curSymbol)
+
+    if (!this.expectPeek(Token.L_PAREN)) {
+      throw new UnexpectedTokenError(this.peekSymbol, Token.L_PAREN)
+    }
+
+    this.readNextSymbol()
     const condition = this.parseExpression(Precedence.LOWEST)
-    this.parseToken(Token.R_PAREN)
+
+    if (!this.expectPeek(Token.R_PAREN)) {
+      throw new UnexpectedTokenError(this.peekSymbol, Token.R_PAREN)
+    }
+
+    this.readNextSymbol()
     const consequence = this.parseStatement()
+
     let alternative: Statement | null = null
-    if (this.currentTokenIs(Token.ELSE)) {
-      this.parseToken(Token.ELSE)
+    if (this.peekTokenIs(Token.ELSE)) {
+      this.readNextSymbol()
+
+      this.readNextSymbol()
       alternative = this.parseStatement()
     }
     return new IfStatement(symbol, condition, consequence, alternative)
   }
 
-  private parseForStatement(): ForStatement {
-    const symbol = { ...this.currentSymbol }
-    this.parseToken(Token.FOR)
-    this.parseToken(Token.L_PAREN)
+  private parseForStatement = (): ForStatement => {
+    const symbol = copySymbol(this.curSymbol)
+
+    if (!this.expectPeek(Token.L_PAREN)) {
+      throw new UnexpectedTokenError(this.peekSymbol, Token.L_PAREN)
+    }
+
     let initialize: Expression | null = null
     let condition: Expression | null = null
     let afterEach: Expression | null = null
-    if (!this.currentTokenIs(Token.SEMICOLON)) {
+    if (!this.peekTokenIs(Token.SEMICOLON)) {
+      this.readNextSymbol()
       initialize = this.parseExpression(Precedence.LOWEST)
     }
-    this.parseToken(Token.SEMICOLON)
-    if (!this.currentTokenIs(Token.SEMICOLON)) {
+    if (!this.expectPeek(Token.SEMICOLON)) {
+      throw new UnexpectedTokenError(this.peekSymbol, Token.SEMICOLON)
+    }
+    if (!this.peekTokenIs(Token.SEMICOLON)) {
+      this.readNextSymbol()
       condition = this.parseExpression(Precedence.LOWEST)
     }
-    this.parseToken(Token.SEMICOLON)
-    if (!this.currentTokenIs(Token.R_PAREN)) {
+    if (!this.expectPeek(Token.SEMICOLON)) {
+      throw new UnexpectedTokenError(this.peekSymbol, Token.SEMICOLON)
+    }
+    if (!this.peekTokenIs(Token.R_PAREN)) {
+      this.readNextSymbol()
       afterEach = this.parseExpression(Precedence.LOWEST)
     }
-    this.parseToken(Token.R_PAREN)
+    if (!this.expectPeek(Token.R_PAREN)) {
+      throw new UnexpectedTokenError(this.peekSymbol, Token.R_PAREN)
+    }
+    this.readNextSymbol()
     const body = this.parseStatement()
     return new ForStatement(symbol, body, initialize, condition, afterEach)
   }
 
-  private parseWhileStatement(): WhileStatement {
-    const symbol = { ...this.currentSymbol }
-    this.parseToken(Token.WHILE)
-    this.parseToken(Token.L_PAREN)
+  private parseWhileStatement = (): WhileStatement => {
+    const symbol = copySymbol(this.curSymbol)
+
+    if (!this.expectPeek(Token.L_PAREN)) {
+      throw new UnexpectedTokenError(this.peekSymbol, Token.L_PAREN)
+    }
+
+    this.readNextSymbol()
     const condition = this.parseExpression(Precedence.LOWEST)
-    this.parseToken(Token.R_PAREN)
+
+    if (!this.expectPeek(Token.R_PAREN)) {
+      throw new UnexpectedTokenError(this.peekSymbol, Token.R_PAREN)
+    }
+
+    this.readNextSymbol()
     const body = this.parseStatement()
     return new WhileStatement(symbol, condition, body)
   }
 
-  private parseContinueStatement(): ContinueStatement {
-    const symbol = { ...this.currentSymbol }
-    this.parseToken(Token.CONTINUE)
-    this.parseToken(Token.SEMICOLON)
+  private parseContinueStatement = (): ContinueStatement => {
+    const symbol = copySymbol(this.curSymbol)
+    if (!this.expectPeek(Token.SEMICOLON)) {
+      throw new UnexpectedTokenError(this.peekSymbol, Token.SEMICOLON)
+    }
     return new ContinueStatement(symbol)
   }
 
-  private parseBreakStatement(): BreakStatement {
-    const symbol = { ...this.currentSymbol }
-    this.parseToken(Token.BREAK)
-    this.parseToken(Token.SEMICOLON)
+  private parseBreakStatement = (): BreakStatement => {
+    const symbol = copySymbol(this.curSymbol)
+    if (!this.expectPeek(Token.SEMICOLON)) {
+      throw new UnexpectedTokenError(this.peekSymbol, Token.SEMICOLON)
+    }
     return new BreakStatement(symbol)
   }
 
-  private parseReturnStatement(): ReturnStatement {
-    const symbol = { ...this.currentSymbol }
-    this.parseToken(Token.RETURN)
-    const returnValue = this.parseExpression(Precedence.LOWEST)
-    this.parseToken(Token.SEMICOLON)
+  private parseReturnStatement = (): ReturnStatement => {
+    const symbol = copySymbol(this.curSymbol)
+    let returnValue: Expression | null = null
+    if (!this.peekTokenIs(Token.SEMICOLON)) {
+      returnValue = this.parseExpression(Precedence.LOWEST)
+    }
+    if (!this.expectPeek(Token.SEMICOLON)) {
+      throw new UnexpectedTokenError(this.peekSymbol, Token.SEMICOLON)
+    }
     return new ReturnStatement(symbol, returnValue)
   }
 
-  private parseExpression(precedence: Precedence): Expression {
+  private parseExpression = (precedence: Precedence): Expression => {
     // Pratt parsing algorithm
-    const prefixParseFunc = this.prefixParseFuncs.get(this.currentSymbol.token)
+    const prefixParseFunc = this.prefixParseFuncs.get(this.curSymbol.token)
     if (!prefixParseFunc) {
-      throw new ParseError(this.currentSymbol)
+      throw new ParseError(this.curSymbol)
     }
     let leftExpr = prefixParseFunc()
 
-    while (!this.currentTokenIs(Token.SEMICOLON) && precedence < this.currentPrecedence()) {
-      const infixParseFunc = this.infixParseFuncs.get(this.currentSymbol.token)
+    while (!this.peekTokenIs(Token.SEMICOLON) && precedence < this.peekPrecedence()) {
+      const infixParseFunc = this.infixParseFuncs.get(this.peekSymbol.token)
       if (!infixParseFunc) {
         return leftExpr
       }
+      this.readNextSymbol()
       leftExpr = infixParseFunc(leftExpr)
     }
     return leftExpr
   }
 
-  private parseIdentifierExpression(): IdentifierExpression {
+  private parseIdentifierExpression = (): IdentifierExpression => {
     const symbol = this.parseIdentifier()
     return new IdentifierExpression(symbol)
   }
 
-  private parseFunctionExpression(): FunctionExpression {
-    const symbol = { ...this.currentSymbol }
-    this.parseToken(Token.FUNC)
-    this.parseToken(Token.L_PAREN)
+  private parseFunctionExpression = (): FunctionExpression => {
+    const symbol = copySymbol(this.curSymbol)
+
+    if (!this.expectPeek(Token.L_PAREN)) {
+      throw new UnexpectedTokenError(this.peekSymbol, Token.L_PAREN)
+    }
+
     const parameters: IdentifierExpression[] = []
-    if (!this.currentTokenIs(Token.R_PAREN)) {
-      parameters.push(new IdentifierExpression(this.parseIdentifier()))
-      while (this.currentTokenIs(Token.COMMA)) {
-        this.parseToken(Token.COMMA)
-        parameters.push(new IdentifierExpression(this.parseIdentifier()))
+    if (!this.peekTokenIs(Token.R_PAREN)) {
+      this.readNextSymbol()
+      parameters.push(this.parseIdentifierExpression())
+
+      while (this.peekTokenIs(Token.COMMA)) {
+        this.readNextSymbol()
+
+        this.readNextSymbol()
+        parameters.push(this.parseIdentifierExpression())
       }
     }
-    this.parseToken(Token.R_PAREN)
+
+    if (!this.expectPeek(Token.R_PAREN)) {
+      throw new UnexpectedTokenError(this.peekSymbol, Token.R_PAREN)
+    }
+
+    if (!this.expectPeek(Token.L_BRACE)) {
+      throw new UnexpectedTokenError(this.peekSymbol, Token.L_BRACE)
+    }
     const body = this.parseBlockStatement()
     return new FunctionExpression(symbol, parameters, body)
   }
 
-  private parseLiteralExpression(): LiteralExpression {
-    const symbol = { ...this.currentSymbol }
+  private parseLiteralExpression = (): LiteralExpression => {
+    const symbol = copySymbol(this.curSymbol)
+
     let value: unknown
-    switch (this.currentSymbol.token) {
+    switch (this.curSymbol.token) {
       case Token.NULL:
         value = null
         break
       case Token.TRUE:
       case Token.FALSE:
-        value = this.currentTokenIs(Token.TRUE)
+        value = this.curTokenIs(Token.TRUE)
         break
       case Token.NUMBER_LITERAL:
-        value = +this.currentSymbol.literal
+        value = +this.curSymbol.literal
         break
       case Token.STRING_LITERAL:
-        value = this.currentSymbol.literal
+        // TODO escape character
+        value = this.curSymbol.literal.slice(1, -1)
         break
       default:
-        throw new ParseError(this.currentSymbol)
+        throw new ParseError(this.curSymbol)
     }
-    this.readNextSymbol()
+
     return new LiteralExpression(symbol, value)
   }
 
-  private parseStringLiteralExpression(): StringLiteralExpression {
-    const symbol = { ...this.currentSymbol }
-    if (!this.currentTokenIs(Token.STRING_LITERAL)) {
-      throw new ParseError(this.currentSymbol)
-    }
-    const value = this.currentSymbol.literal
-    this.readNextSymbol()
-    return new StringLiteralExpression(symbol, value)
-  }
+  private parsePrefixExpression = (): PrefixExpression => {
+    const symbol = copySymbol(this.curSymbol)
+    const operator = copySymbol(this.curSymbol)
 
-  private parsePrefixExpression(): PrefixExpression {
-    const symbol = { ...this.currentSymbol }
-    const operator = { ...this.currentSymbol }
     this.readNextSymbol()
     const operand = this.parseExpression(Precedence.PREFIX)
+
     return new PrefixExpression(symbol, operator, operand)
   }
 
-  private parseInfixExpression(left: Expression): InfixExpression {
-    const symbol = { ...this.currentSymbol }
-    const operator = { ...this.currentSymbol }
-    const precedence = this.currentPrecedence()
+  private parseInfixExpression = (left: Expression): InfixExpression => {
+    const symbol = copySymbol(this.curSymbol)
+    const operator = copySymbol(this.curSymbol)
+    const precedence = this.curPrecedence()
+
     this.readNextSymbol()
     const right = this.parseExpression(precedence)
+
     return new InfixExpression(symbol, operator, left, right)
   }
 
-  private parseLetExpression(): LetExpression {
-    const symbol = { ...this.currentSymbol }
-    this.parseToken(Token.LET)
-    const arr: VariableDeclaration[] = []
-    let identifier: LexicalSymbol
-    let value: Expression | null
-    identifier = this.parseIdentifier()
-    if (this.currentTokenIs(Token.ASSIGN)) {
-      this.parseToken(Token.ASSIGN)
+  private parseVariableDeclaration(): VariableDeclaration {
+    const symbol = copySymbol(this.curSymbol)
+
+    const identifier = this.parseIdentifier()
+
+    let value: Expression | null = null
+    if (this.peekTokenIs(Token.ASSIGN)) {
+      this.readNextSymbol()
+
+      this.readNextSymbol()
       value = this.parseExpression(Precedence.LOWEST)
     } else {
       value = null
     }
-    arr.push(new VariableDeclaration(identifier, identifier, value))
-    while (this.currentTokenIs(Token.COMMA)) {
-      this.parseToken(Token.COMMA)
-      identifier = this.parseIdentifier()
-      if (this.currentTokenIs(Token.ASSIGN)) {
-        this.parseToken(Token.ASSIGN)
-        value = this.parseExpression(Precedence.LOWEST)
-      } else {
-        value = null
-      }
-      arr.push(new VariableDeclaration(identifier, identifier, value))
+    return new VariableDeclaration(symbol, identifier, value)
+  }
+
+  private parseLetExpression = (): LetExpression => {
+    const symbol = copySymbol(this.curSymbol)
+    const arr: VariableDeclaration[] = []
+
+    this.readNextSymbol()
+    arr.push(this.parseVariableDeclaration())
+
+    while (this.peekTokenIs(Token.COMMA)) {
+      this.readNextSymbol()
+
+      this.readNextSymbol()
+      arr.push(this.parseVariableDeclaration())
     }
     return new LetExpression(symbol, arr)
   }
 
-  private parseGroupedExpression(): Expression {
-    this.parseToken(Token.L_PAREN)
+  private parseGroupedExpression = (): Expression => {
+    this.readNextSymbol()
     const expr = this.parseExpression(Precedence.LOWEST)
-    this.parseToken(Token.R_PAREN)
+
+    if (!this.expectPeek(Token.R_PAREN)) {
+      throw new UnexpectedTokenError(this.peekSymbol, Token.R_PAREN)
+    }
     return expr
   }
 
-  private parseCallExpression(left: Expression): CallExpression {
-    const symbol = { ...this.currentSymbol }
+  private parseCallExpression = (left: Expression): CallExpression => {
+    const symbol = copySymbol(this.curSymbol)
     const callable = left
-    this.parseToken(Token.L_PAREN)
     const args: Expression[] = []
-    if (!this.currentTokenIs(Token.R_PAREN)) {
+    if (!this.peekTokenIs(Token.R_PAREN)) {
+      this.readNextSymbol()
       args.push(this.parseExpression(Precedence.LOWEST))
-      while (this.currentTokenIs(Token.COMMA)) {
-        this.parseToken(Token.COMMA)
+
+      while (this.peekTokenIs(Token.COMMA)) {
+        this.readNextSymbol()
+
+        this.readNextSymbol()
         args.push(this.parseExpression(Precedence.LOWEST))
       }
     }
-    this.parseToken(Token.R_PAREN)
+    if (!this.expectPeek(Token.R_PAREN)) {
+      throw new UnexpectedTokenError(this.peekSymbol, Token.R_PAREN)
+    }
     return new CallExpression(symbol, callable, args)
   }
 
-  private parseArrayExpression(): ArrayExpression {
-    const symbol = { ...this.currentSymbol }
-    this.parseToken(Token.L_BRACKET)
+  private parseArrayExpression = (): ArrayExpression => {
+    const symbol = copySymbol(this.curSymbol)
     const elements: Expression[] = []
-    if (!this.currentTokenIs(Token.R_BRACKET)) {
+    if (!this.peekTokenIs(Token.R_BRACKET)) {
+      this.readNextSymbol()
       elements.push(this.parseExpression(Precedence.LOWEST))
-      while (this.currentTokenIs(Token.COMMA)) {
-        this.parseToken(Token.COMMA)
+
+      while (this.peekTokenIs(Token.COMMA)) {
+        this.readNextSymbol()
+
+        this.readNextSymbol()
         elements.push(this.parseExpression(Precedence.LOWEST))
       }
     }
-    this.parseToken(Token.R_BRACKET)
+    if (!this.expectPeek(Token.R_BRACKET)) {
+      throw new UnexpectedTokenError(this.peekSymbol, Token.R_BRACKET)
+    }
     return new ArrayExpression(symbol, elements)
   }
 
-  private parseKeyValue(): KeyValue {
-    if (!this.currentTokenIs(Token.STRING_LITERAL)) {
-      throw new ParseError(this.currentSymbol)
+  private parseKeyValue = (): KeyValue => {
+    const symbol = copySymbol(this.curSymbol)
+
+    if (!this.curTokenIs(Token.STRING_LITERAL)) {
+      throw new UnexpectedTokenError(this.curSymbol, Token.STRING_LITERAL)
     }
-    const symbol = { ...this.currentSymbol }
-    const key = this.parseStringLiteralExpression()
-    this.parseToken(Token.COLON)
+    const key = this.parseLiteralExpression()
+
+    if (!this.expectPeek(Token.COLON)) {
+      throw new UnexpectedTokenError(this.peekSymbol, Token.COLON)
+    }
+
+    this.readNextSymbol()
     const value = this.parseExpression(Precedence.LOWEST)
     return new KeyValue(symbol, key, value)
   }
 
-  private parseHashExpression(): HashExpression {
-    const symbol = { ...this.currentSymbol }
-    this.parseToken(Token.L_BRACE)
+  private parseHashExpression = (): HashExpression => {
+    const symbol = copySymbol(this.curSymbol)
     const keyValues: KeyValue[] = []
-    if (!this.currentTokenIs(Token.R_BRACE)) {
+    if (!this.peekTokenIs(Token.R_BRACE)) {
+      this.readNextSymbol()
       keyValues.push(this.parseKeyValue())
 
-      while (this.currentTokenIs(Token.COMMA)) {
-        this.parseToken(Token.COMMA)
+      while (this.peekTokenIs(Token.COMMA)) {
+        this.readNextSymbol()
+
+        this.readNextSymbol()
         keyValues.push(this.parseKeyValue())
       }
     }
-    this.parseToken(Token.R_BRACE)
+    if (!this.expectPeek(Token.R_BRACE)) {
+      throw new UnexpectedTokenError(this.peekSymbol, Token.R_BRACE)
+    }
     return new HashExpression(symbol, keyValues)
   }
 
-  private parseIndexExpression(left: Expression): InfixExpression {
+  private parseIndexExpression = (left: Expression): InfixExpression => {
     const indexable = left
-    const symbol = { ...this.currentSymbol }
-    const operator = { ...this.currentSymbol }
-    this.parseToken(Token.L_BRACKET)
+    const symbol = copySymbol(this.curSymbol)
+    const operator = copySymbol(this.curSymbol)
+
+    this.readNextSymbol()
     const index = this.parseExpression(Precedence.LOWEST)
-    this.parseToken(Token.R_BRACKET)
+
+    if (!this.expectPeek(Token.R_BRACKET)) {
+      throw new UnexpectedTokenError(this.peekSymbol, Token.R_BRACKET)
+    }
     return new InfixExpression(symbol, operator, indexable, index)
   }
 
-  private readNextSymbol() {
-    this.currentSymbol = this.nextSymbol
-    this.nextSymbol = this.lexer.nextSymbol()
+  private readNextSymbol = () => {
+    this.curSymbol = this.peekSymbol
+    this.peekSymbol = this.lexer.nextSymbol()
   }
 
-  private parseToken(token: Token) {
-    if (this.currentSymbol.token !== token) {
-      throw new UnexpectedTokenError(this.currentSymbol, token)
+  private expectPeek = (token: Token): boolean => {
+    if (this.peekTokenIs(token)) {
+      this.readNextSymbol()
+      return true
+    } else {
+      return false
     }
-    this.readNextSymbol()
   }
 
-  private parseIdentifier(): LexicalSymbol {
-    if (this.currentSymbol.token !== Token.IDENTIFIER) {
-      throw new UnexpectedTokenError(this.currentSymbol, Token.IDENTIFIER)
+  private parseIdentifier = (): LexicalSymbol => {
+    if (this.curSymbol.token !== Token.IDENTIFIER) {
+      throw new UnexpectedTokenError(this.curSymbol, Token.IDENTIFIER)
     }
-    const ret = { ...this.currentSymbol }
-    this.readNextSymbol()
-    return ret
+    return copySymbol(this.curSymbol)
   }
 
-  private currentTokenIs(token: Token) {
-    return this.currentSymbol.token === token
+  private curTokenIs = (token: Token): boolean => {
+    return this.curSymbol.token === token
   }
 
-  private nextTokenIs(token: Token) {
-    return this.nextSymbol.token === token
+  private peekTokenIs = (token: Token): boolean => {
+    return this.peekSymbol.token === token
   }
 
-  private currentPrecedence(): Precedence {
-    return precedences[this.currentSymbol.token] ?? Precedence.LOWEST
+  private curPrecedence = (): Precedence => {
+    return precedences[this.curSymbol.token] ?? Precedence.LOWEST
   }
 
-  private nextPrecedence(): Precedence {
-    return precedences[this.nextSymbol.token] ?? Precedence.LOWEST
+  private peekPrecedence = (): Precedence => {
+    return precedences[this.peekSymbol.token] ?? Precedence.LOWEST
   }
 }

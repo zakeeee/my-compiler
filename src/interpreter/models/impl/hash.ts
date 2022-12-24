@@ -1,19 +1,23 @@
-import { ObjectType, PopBoolean, PopHash, PopObject, PopString } from '../types'
+import { IPopBoolean, IPopHash, IPopObject, IPopString, ObjectType } from '../types'
 import { C_FALSE, C_TRUE } from './boolean'
-import PopStringImpl from './string'
+import PopString from './string'
 
-export default class PopHashImpl implements PopHash {
-  constructor(private elements: Map<string, PopObject>) {}
+export default class PopHash implements IPopHash {
+  get type(): ObjectType {
+    return ObjectType.HASH
+  }
 
-  $equal(other: PopObject): PopBoolean {
+  constructor(private elements: Map<string, IPopObject>) {}
+
+  equal(other: IPopObject): IPopBoolean {
     return this === other ? C_TRUE : C_FALSE
   }
 
-  $toBoolean(): PopBoolean {
+  toBoolean(): IPopBoolean {
     return C_TRUE
   }
 
-  $toString(): PopString {
+  toString(): IPopString {
     const arr: string[] = []
     const entries = this.elements.entries()
     for (const [key, value] of entries) {
@@ -21,23 +25,19 @@ export default class PopHashImpl implements PopHash {
         arr.push('...')
         break
       }
-      arr.push(`${key}: ${value.$toString().$unwrap()}`)
+      arr.push(`"${key}": ${value.toString().unwrap()}`)
     }
-    return new PopStringImpl(`{${arr.join(', ')}}`)
+    return new PopString(`{${arr.join(', ')}}`)
   }
 
-  $type(): ObjectType {
-    return ObjectType.HASH
-  }
-
-  $index(index: PopObject): PopObject {
-    if (index instanceof PopStringImpl) {
-      const key = index.$unwrap()
+  index(index: IPopObject): IPopObject {
+    if (index instanceof PopString) {
+      const key = index.unwrap()
       if (!this.elements.has(key)) {
         throw new Error(`hash has no key "${key}"`)
       }
       return this.elements.get(key)!
     }
-    throw new Error(`"${index.$type()}" cannot be used as hash index`)
+    throw new Error(`"${index.type}" cannot be used as hash index`)
   }
 }

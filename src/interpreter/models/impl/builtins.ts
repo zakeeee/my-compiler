@@ -1,81 +1,81 @@
-import { ObjectType, PopBoolean, PopBuiltinFunction, PopObject, PopString } from '../types'
+import { IPopBoolean, IPopBuiltinFunction, IPopObject, IPopString, ObjectType } from '../types'
 import { C_FALSE, C_TRUE } from './boolean'
 import { C_NULL } from './null'
-import PopStringImpl from './string'
+import PopString from './string'
 
-export abstract class PopBuiltinFunctionImpl implements PopBuiltinFunction {
-  protected constructor(private name: string, private parameters: string[]) {}
-
-  abstract $call(args: PopObject[]): PopObject
-
-  get $name(): string {
-    return this.name
+export abstract class PopBuiltinFunction implements IPopBuiltinFunction {
+  get type(): ObjectType {
+    return ObjectType.BUILTIN_FUNCTION
   }
 
-  get $parameters(): string[] {
-    return [...this.parameters]
+  get name(): string {
+    return this._name
   }
 
-  $equal(other: PopObject): PopBoolean {
+  get parameters(): string[] {
+    return [...this._params]
+  }
+
+  protected constructor(private _name: string, private _params: string[]) {}
+
+  abstract call(args: IPopObject[]): IPopObject
+
+  equal(other: IPopObject): IPopBoolean {
     return this === other ? C_TRUE : C_FALSE
   }
 
-  $toBoolean(): PopBoolean {
+  toBoolean(): IPopBoolean {
     return C_TRUE
   }
 
-  $toString(): PopString {
-    return new PopStringImpl(`<BuiltInFunction ${this.$name}>`)
-  }
-
-  $type(): ObjectType {
-    return ObjectType.BUILTIN_FUNCTION
+  toString(): IPopString {
+    return new PopString(`<BuiltInFunction ${this._name}>`)
   }
 }
 
-class Builtin_Len extends PopBuiltinFunctionImpl {
+class Builtin_Len extends PopBuiltinFunction {
   constructor() {
     super('len', ['arg'])
   }
 
-  $call(args: PopObject[]): PopObject {
+  call(args: IPopObject[]): IPopObject {
     const [arg] = args
-    if ('$length' in arg && typeof (arg as any).$length === 'function') {
-      return (arg as any).$length()
+    if ('length' in arg && typeof (arg as any).length === 'function') {
+      return (arg as any).length()
     }
-    throw new Error(`cannot perform len operation on ${arg.$type()}`)
+    throw new Error(`cannot perform len operation on ${arg.type}`)
   }
 }
 
-class Builtin_Type extends PopBuiltinFunctionImpl {
+class Builtin_Type extends PopBuiltinFunction {
   constructor() {
     super('type', ['arg'])
   }
 
-  $call(args: PopObject[]): PopObject {
+  call(args: IPopObject[]): IPopObject {
     const [arg] = args
-    return new PopStringImpl(arg.$type())
+    return new PopString(arg.type)
   }
 }
 
-class Builtin_Str extends PopBuiltinFunctionImpl {
+class Builtin_Str extends PopBuiltinFunction {
   constructor() {
     super('str', ['arg'])
   }
 
-  $call(args: PopObject[]): PopObject {
+  call(args: IPopObject[]): IPopObject {
     const [arg] = args
-    return arg.$toString()
+    return arg.toString()
   }
 }
 
-class Builtin_Print extends PopBuiltinFunctionImpl {
+class Builtin_Print extends PopBuiltinFunction {
   constructor() {
     super('print', ['args'])
   }
 
-  $call(args: PopObject[]): PopObject {
-    console.log(...args.map((o) => o.$toString().$unwrap()))
+  call(args: IPopObject[]): IPopObject {
+    console.log(...args.map((o) => o.toString().unwrap()))
     return C_NULL
   }
 }

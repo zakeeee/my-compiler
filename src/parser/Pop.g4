@@ -27,9 +27,9 @@ expressionStatement: expressionSequence ';';
 
 letStatement: letExpression ';';
 
-parameters: (Identifier (',' Identifier)*)?;
+parameterSequence: Identifier (',' Identifier)*;
 
-functionStatement: FUNC Identifier '(' parameters ')' blockStatement;
+functionStatement: FUNC Identifier '(' parameterSequence? ')' blockStatement;
 
 ifStatement: IF '(' expression ')' statement (ELSE statement)?;
 
@@ -80,7 +80,7 @@ variableDeclarationSequence: variableDeclaration (',' variableDeclaration)*;
 
 letExpression: LET variableDeclarationSequence;
 
-functionExpression: FUNC '(' parameters ')' blockStatement;
+functionExpression: FUNC '(' parameterSequence? ')' blockStatement;
 
 arguments: expressionSequence?;
 
@@ -96,9 +96,7 @@ arrayExpression: '[' expressionSequence? ']';
 
 indexExpression: expression '[' expression ']';
 
-stringLiteralExpression: StringLiteral;
-
-keyValue: stringLiteralExpression ':' expression;
+keyValue: StringLiteral ':' expression;
 
 keyValueSequence: keyValue (',' keyValue)*;
 

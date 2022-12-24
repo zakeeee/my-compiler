@@ -1,5 +1,6 @@
+import { IPosition } from 'src/types'
+import { alternation, concatenation, kleeneClosure } from './regex'
 import { getKeywordToken, isKeyword, Token } from './token'
-import { kleeneClosure, alternation, concatenation } from './regex'
 
 const identifierRE = /^[A-Za-z][A-Za-z0-9]*/
 
@@ -17,19 +18,14 @@ const escapeSequence = alternation(
 const stringCharacter = alternation(/[^"\\\r\n]/, concatenation(/\\/, escapeSequence))
 const stringLiteralRE = concatenation(/^"/, kleeneClosure(stringCharacter), /"/)
 
-export type Position = {
-  line: number
-  column: number
-}
-
 export type LexicalSymbol = {
   token: Token
   literal: string
-  start: Position
-  end: Position
+  start: IPosition
+  end: IPosition
 }
 
-export function createLexerSymbol(token: Token, literal: string, start: Position, end: Position) {
+export function createLexerSymbol(token: Token, literal: string, start: IPosition, end: IPosition) {
   return {
     token,
     literal,
@@ -245,7 +241,7 @@ export default class Lexer {
     return createLexerSymbol(Token.ILLEGAL, '', startPos, startPos)
   }
 
-  private getPos(): Position {
+  private getPos(): IPosition {
     const { line, offset, lineOffset } = this
     return {
       line,

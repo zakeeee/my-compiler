@@ -24,17 +24,17 @@ import {
   WhileStatement,
 } from 'src/ast'
 import { getTokenName, Token } from '../lexer'
-import { PopError } from './error'
-import PopArrayImpl from './models/impl/array'
+import PopArray from './models/impl/array'
 import { C_FALSE, C_TRUE } from './models/impl/boolean'
-import { builtinFunctions, PopBuiltinFunctionImpl } from './models/impl/builtins'
-import PopFunctionImpl from './models/impl/function'
-import PopHashImpl from './models/impl/hash'
+import { builtinFunctions, PopBuiltinFunction } from './models/impl/builtins'
+import PopError from './models/impl/error'
+import PopFunction from './models/impl/function'
+import PopHash from './models/impl/hash'
 import { C_NULL } from './models/impl/null'
-import PopNumberImpl from './models/impl/number'
-import PopStringImpl from './models/impl/string'
+import PopNumber from './models/impl/number'
+import PopString from './models/impl/string'
 import { C_VOID, isVoid, VoidType } from './models/impl/void'
-import { PopArray, PopFunction, PopHash, PopObject, PopString } from './models/types'
+import { IPopArray, IPopFunction, IPopHash, IPopObject, IPopString } from './models/types'
 import { Scope, uninitialized } from './scope'
 
 type EvalResult<T> = [PopError, null] | [null, T]
@@ -44,7 +44,7 @@ class ContinueStatementEvalResult {}
 class BreakStatementEvalResult {}
 
 class ReturnStatementEvalResult {
-  constructor(readonly returnValue: PopObject | VoidType) {}
+  constructor(readonly returnValue: IPopObject | VoidType) {}
 }
 
 export function evalProgram(node: Program, scope: Scope): VoidType {
@@ -160,7 +160,7 @@ function evalFunctionStatement(stmt: FunctionStatement, scope: Scope): EvalResul
     return [err, null]
   }
   const params = stmt.parameters.map((param) => param.literal)
-  const func = new PopFunctionImpl(params, stmt.body, scope, name)
+  const func = new PopFunction(params, stmt.body, scope, name)
   scope.setOwnValue(name, func)
   return [null, C_VOID]
 }
@@ -180,7 +180,7 @@ function evalIfStatement(
     err.pushStack(stmt.condition.symbol.start)
     return [err, null]
   }
-  if (condition.$toBoolean().$unwrap()) {
+  if (condition.toBoolean().unwrap()) {
     return evalStatement(stmt.consequence, scope)
   } else if (stmt.alternative) {
     return evalStatement(stmt.alternative, scope)
@@ -216,7 +216,7 @@ function evalForStatement(
       err.pushStack(conditionExpr.symbol.start)
       return [err, null]
     }
-    condition = val.$toBoolean().$unwrap()
+    condition = val.toBoolean().unwrap()
   }
   while (condition) {
     const [err, val] = evalStatement(bodyStatement, scope)
@@ -247,7 +247,7 @@ function evalForStatement(
         err.pushStack(conditionExpr.symbol.start)
         return [err, null]
       }
-      condition = val.$toBoolean().$unwrap()
+      condition = val.toBoolean().unwrap()
     }
   }
   return [null, C_VOID]
@@ -266,7 +266,7 @@ function evalWhileStatement(
     err.pushStack(stmt.condition.symbol.start)
     return [err, null]
   }
-  let condition = val.$toBoolean().$unwrap()
+  let condition = val.toBoolean().unwrap()
   while (condition) {
     const [err1, val1] = evalStatement(stmt.body, scope)
     if (err1) {
@@ -288,7 +288,7 @@ function evalWhileStatement(
       err.pushStack(stmt.condition.symbol.start)
       return [err, null]
     }
-    condition = val2.$toBoolean().$unwrap()
+    condition = val2.toBoolean().unwrap()
   }
   return [null, C_VOID]
 }
@@ -311,7 +311,7 @@ function evalReturnStatement(
   stmt: ReturnStatement,
   scope: Scope
 ): EvalResult<ReturnStatementEvalResult> {
-  let ret: PopObject | VoidType = C_VOID
+  let ret: IPopObject | VoidType = C_VOID
   if (stmt.returnValue) {
     const [err, val] = evalExpression(stmt.returnValue, scope)
     if (err) {
@@ -322,7 +322,7 @@ function evalReturnStatement(
   return [null, new ReturnStatementEvalResult(ret)]
 }
 
-function evalExpression(expr: Expression, scope: Scope): EvalResult<PopObject | VoidType> {
+function evalExpression(expr: Expression, scope: Scope): EvalResult<IPopObject | VoidType> {
   switch (expr.nodeType) {
     case TreeNodeType.PREFIX_EXPRESSION:
       return evalPrefixExpression(expr as PrefixExpression, scope)
@@ -351,12 +351,12 @@ function evalExpression(expr: Expression, scope: Scope): EvalResult<PopObject | 
 }
 
 const prefixOpTokenToSlotNameMap = {
-  [Token.PLUS]: '$toPositive',
-  [Token.MINUS]: '$toNegative',
-  [Token.BIT_NOT]: '$bitNot',
+  [Token.PLUS]: 'toPositive',
+  [Token.MINUS]: 'toNegative',
+  [Token.BIT_NOT]: 'bitNot',
 } as Record<Token, string>
 
-function evalPrefixExpression(expr: PrefixExpression, scope: Scope): EvalResult<PopObject> {
+function evalPrefixExpression(expr: PrefixExpression, scope: Scope): EvalResult<IPopObject> {
   const [err, operand] = evalExpression(expr.operand, scope)
   if (err) {
     return [err, null]
@@ -369,7 +369,7 @@ function evalPrefixExpression(expr: PrefixExpression, scope: Scope): EvalResult<
 
   switch (expr.operator.token) {
     case Token.NOT:
-      return [null, operand.$toBoolean().$not()]
+      return [null, operand.toBoolean().not()]
     default: {
       const token = expr.operator.token
       const slotName = prefixOpTokenToSlotNameMap[token]
@@ -394,27 +394,27 @@ function evalPrefixExpression(expr: PrefixExpression, scope: Scope): EvalResult<
 }
 
 const infixOpTokenToSlotNameMap = {
-  [Token.ASTERISK]: '$multiply',
-  [Token.SLASH]: '$divide',
-  [Token.PERCENT]: '$modulo',
-  [Token.PLUS]: '$add',
-  [Token.MINUS]: '$minus',
-  [Token.GREATER_THAN]: '$greaterThan',
-  [Token.GREATER_THAN_EQUAL]: '$greaterThanEqual',
-  [Token.LESS_THAN]: '$lessThan',
-  [Token.LESS_THAN_EQUAL]: '$lessThanEqual',
-  [Token.BIT_AND]: '$bitAnd',
-  [Token.BIT_OR]: '$bitOr',
-  [Token.BIT_XOR]: '$bitXor',
-  [Token.MULTIPLY_EQUAL]: '$multiply',
-  [Token.DIVIDE_EQUAL]: '$divide',
-  [Token.MODULO_EQUAL]: '$modulo',
-  [Token.PLUS_EQUAL]: '$add',
-  [Token.MINUS_EQUAL]: '$minus',
-  [Token.BIT_AND_EQUAL]: '$bitAnd',
-  [Token.BIT_OR_EQUAL]: '$bitOr',
-  [Token.BIT_XOR_EQUAL]: '$bitXor',
-  [Token.L_BRACKET]: '$index',
+  [Token.ASTERISK]: 'multiply',
+  [Token.SLASH]: 'divide',
+  [Token.PERCENT]: 'modulo',
+  [Token.PLUS]: 'add',
+  [Token.MINUS]: 'minus',
+  [Token.GREATER_THAN]: 'greaterThan',
+  [Token.GREATER_THAN_EQUAL]: 'greaterThanEqual',
+  [Token.LESS_THAN]: 'lessThan',
+  [Token.LESS_THAN_EQUAL]: 'lessThanEqual',
+  [Token.BIT_AND]: 'bitAnd',
+  [Token.BIT_OR]: 'bitOr',
+  [Token.BIT_XOR]: 'bitXor',
+  [Token.MULTIPLY_EQUAL]: 'multiply',
+  [Token.DIVIDE_EQUAL]: 'divide',
+  [Token.MODULO_EQUAL]: 'modulo',
+  [Token.PLUS_EQUAL]: 'add',
+  [Token.MINUS_EQUAL]: 'minus',
+  [Token.BIT_AND_EQUAL]: 'bitAnd',
+  [Token.BIT_OR_EQUAL]: 'bitOr',
+  [Token.BIT_XOR_EQUAL]: 'bitXor',
+  [Token.L_BRACKET]: 'index',
 } as Record<Token, string>
 
 const assignmentOperators = [
@@ -431,7 +431,7 @@ const assignmentOperators = [
 function evalInfixExpression(
   expr: InfixExpression,
   scope: Scope
-): EvalResult<VoidType | PopObject> {
+): EvalResult<VoidType | IPopObject> {
   const [err1, rightOperand] = evalExpression(expr.right, scope)
   if (err1) {
     return [err1, null]
@@ -487,7 +487,7 @@ function evalInfixExpression(
       return [err, null]
     }
 
-    let value: PopObject
+    let value: IPopObject
     const { token } = expr.operator
     const slotName = infixOpTokenToSlotNameMap[token]
     if (
@@ -518,19 +518,19 @@ function evalInfixExpression(
   const { token } = expr.operator
   switch (token) {
     case Token.EQUAL:
-      return [null, leftOperand.$equal(rightOperand)]
+      return [null, leftOperand.equal(rightOperand)]
     case Token.NOT_EQUAL: {
-      return [null, leftOperand.$equal(rightOperand).$not()]
+      return [null, leftOperand.equal(rightOperand).not()]
     }
     case Token.LOGIC_AND: {
-      const a = leftOperand.$toBoolean()
-      const b = rightOperand.$toBoolean()
-      return [null, a.$unwrap() && b.$unwrap() ? C_TRUE : C_FALSE]
+      const a = leftOperand.toBoolean()
+      const b = rightOperand.toBoolean()
+      return [null, a.unwrap() && b.unwrap() ? C_TRUE : C_FALSE]
     }
     case Token.LOGIC_OR: {
-      const a = leftOperand.$toBoolean()
-      const b = rightOperand.$toBoolean()
-      return [null, a.$unwrap() || b.$unwrap() ? C_TRUE : C_FALSE]
+      const a = leftOperand.toBoolean()
+      const b = rightOperand.toBoolean()
+      return [null, a.unwrap() || b.unwrap() ? C_TRUE : C_FALSE]
     }
     default: {
       const slotName = infixOpTokenToSlotNameMap[token]
@@ -584,20 +584,20 @@ function evalLetExpression(expr: LetExpression, scope: Scope): EvalResult<VoidTy
   return [null, C_VOID]
 }
 
-function evalCallExpression(expr: CallExpression, scope: Scope): EvalResult<VoidType | PopObject> {
+function evalCallExpression(expr: CallExpression, scope: Scope): EvalResult<VoidType | IPopObject> {
   const [err1, func] = evalExpression(expr.callable!, scope)
   if (err1) {
     err1.pushStack(expr.symbol.start)
     return [err1, null]
   }
 
-  if (!(func instanceof PopFunctionImpl || func instanceof PopBuiltinFunctionImpl)) {
+  if (!(func instanceof PopFunction || func instanceof PopBuiltinFunction)) {
     const err = new PopError(`object is not callable`)
     err.pushStack(expr.symbol.start)
     return [err, null]
   }
 
-  const args: PopObject[] = []
+  const args: IPopObject[] = []
   for (const arg of expr.args) {
     const [err, val] = evalExpression(arg, scope)
     if (err) {
@@ -610,17 +610,17 @@ function evalCallExpression(expr: CallExpression, scope: Scope): EvalResult<Void
     }
     args.push(val)
   }
-  if (args.length < func.$parameters.length) {
+  if (args.length < func.parameters.length) {
     const err = new PopError(
-      `${func.$name} requires at least ${func.$parameters.length} arguments but ${args.length} is given`
+      `${func.name} requires at least ${func.parameters.length} arguments but ${args.length} is given`
     )
     err.pushStack(expr.symbol.start)
     return [err, null]
   }
 
-  if (func instanceof PopBuiltinFunctionImpl) {
+  if (func instanceof PopBuiltinFunction) {
     try {
-      return [null, func.$call(args)]
+      return [null, func.call(args)]
     } catch (error) {
       const message = error instanceof Error ? error.message : `${error}`
       const err = new PopError(message)
@@ -630,7 +630,7 @@ function evalCallExpression(expr: CallExpression, scope: Scope): EvalResult<Void
   }
 
   const funcScope = new Scope(func.scope)
-  func.$parameters.forEach((paramName, idx) => {
+  func.parameters.forEach((paramName, idx) => {
     funcScope.setOwnValue(paramName, args[idx])
   })
   const [err2, res] = evalStatement(func.body, funcScope)
@@ -654,13 +654,12 @@ function evalCallExpression(expr: CallExpression, scope: Scope): EvalResult<Void
   return [null, C_VOID]
 }
 
-function evalLiteralExpression(expr: LiteralExpression, scope: Scope): EvalResult<PopObject> {
+function evalLiteralExpression(expr: LiteralExpression, scope: Scope): EvalResult<IPopObject> {
   switch (expr.symbol.token) {
     case Token.NUMBER_LITERAL:
-      return [null, new PopNumberImpl(expr.value as number)]
+      return [null, new PopNumber(expr.value as number)]
     case Token.STRING_LITERAL:
-      // TODO
-      return [null, new PopStringImpl(eval(expr.value as string))]
+      return [null, new PopString(expr.value as string)]
     case Token.TRUE:
       return [null, C_TRUE]
     case Token.FALSE:
@@ -675,7 +674,10 @@ function evalLiteralExpression(expr: LiteralExpression, scope: Scope): EvalResul
   }
 }
 
-function evalIdentifierExpression(expr: IdentifierExpression, scope: Scope): EvalResult<PopObject> {
+function evalIdentifierExpression(
+  expr: IdentifierExpression,
+  scope: Scope
+): EvalResult<IPopObject> {
   const name = expr.symbol.literal
   const obj = scope.getValue(name)
   if (obj) {
@@ -701,13 +703,13 @@ function evalIdentifierExpression(expr: IdentifierExpression, scope: Scope): Eva
   return [err, null]
 }
 
-function evalFunctionExpression(expr: FunctionExpression, scope: Scope): EvalResult<PopFunction> {
+function evalFunctionExpression(expr: FunctionExpression, scope: Scope): EvalResult<IPopFunction> {
   const parameters = expr.params.map((param) => param.symbol.literal)
-  return [null, new PopFunctionImpl(parameters, expr.body, scope)]
+  return [null, new PopFunction(parameters, expr.body, scope)]
 }
 
-function evalArrayExpression(expr: ArrayExpression, scope: Scope): EvalResult<PopArray> {
-  const elements: PopObject[] = []
+function evalArrayExpression(expr: ArrayExpression, scope: Scope): EvalResult<IPopArray> {
+  const elements: IPopObject[] = []
   for (const el of expr.elements) {
     const [err, val] = evalExpression(el, scope)
     if (err) {
@@ -720,11 +722,11 @@ function evalArrayExpression(expr: ArrayExpression, scope: Scope): EvalResult<Po
     }
     elements.push(val)
   }
-  return [null, new PopArrayImpl(elements)]
+  return [null, new PopArray(elements)]
 }
 
-function evalHashExpression(expr: HashExpression, scope: Scope): EvalResult<PopHash> {
-  const elements = new Map<string, PopObject>()
+function evalHashExpression(expr: HashExpression, scope: Scope): EvalResult<IPopHash> {
+  const elements = new Map<string, IPopObject>()
   const { keyValueSequence } = expr
   for (const keyValue of keyValueSequence) {
     const [err1, key] = evalLiteralExpression(keyValue.key, scope)
@@ -741,7 +743,7 @@ function evalHashExpression(expr: HashExpression, scope: Scope): EvalResult<PopH
       err.pushStack(keyValue.value.symbol.start)
       return [err, null]
     }
-    elements.set((key as PopString).$unwrap(), val)
+    elements.set((key as IPopString).unwrap(), val)
   }
-  return [null, new PopHashImpl(elements)]
+  return [null, new PopHash(elements)]
 }

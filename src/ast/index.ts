@@ -28,18 +28,18 @@ export enum TreeNodeType {
   HASH_EXPRESSION = 'hashExpression',
 }
 
-export interface TreeNode {
+export interface ITreeNode {
   nodeType: TreeNodeType
   symbol: LexicalSymbol
 }
 
-export class Program implements TreeNode {
+export class Program implements ITreeNode {
   nodeType = TreeNodeType.PROGRAM
 
   constructor(public symbol: LexicalSymbol, public body: Statement[]) {}
 }
 
-export interface Statement extends TreeNode {}
+export interface Statement extends ITreeNode {}
 
 export class BlockStatement implements Statement {
   nodeType = TreeNodeType.BLOCK_STATEMENT
@@ -123,7 +123,7 @@ export class ReturnStatement implements Statement {
   constructor(public symbol: LexicalSymbol, public returnValue: Expression | null = null) {}
 }
 
-export interface Expression extends TreeNode {}
+export interface Expression extends ITreeNode {}
 
 export class PrefixExpression implements Expression {
   nodeType = TreeNodeType.PREFIX_EXPRESSION
@@ -146,7 +146,7 @@ export class InfixExpression implements Expression {
   ) {}
 }
 
-export class VariableDeclaration implements TreeNode {
+export class VariableDeclaration implements ITreeNode {
   nodeType = TreeNodeType.VARIABLE_DECLARATION
 
   constructor(
@@ -181,12 +181,6 @@ export class LiteralExpression implements Expression {
   constructor(public symbol: LexicalSymbol, public value: unknown) {}
 }
 
-export class StringLiteralExpression implements Expression {
-  nodeType = TreeNodeType.LITERAL_EXPRESSION
-
-  constructor(public symbol: LexicalSymbol, public value: string) {}
-}
-
 export class IdentifierExpression implements Expression {
   nodeType = TreeNodeType.IDENTIFIER_EXPRESSION
 
@@ -209,12 +203,12 @@ export class ArrayExpression implements Expression {
   constructor(public symbol: LexicalSymbol, public elements: Expression[]) {}
 }
 
-export class KeyValue implements TreeNode {
+export class KeyValue implements ITreeNode {
   nodeType = TreeNodeType.KEY_VALUE
 
   constructor(
     public symbol: LexicalSymbol,
-    public key: StringLiteralExpression,
+    public key: LiteralExpression,
     public value: Expression
   ) {}
 }

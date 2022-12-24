@@ -1,21 +1,21 @@
-import { ObjectType, PopBoolean, PopObject, PopString } from '../types'
+import { IPopBoolean, IPopObject, IPopString, ObjectType } from '../types'
 import { C_FALSE, C_TRUE } from './boolean'
-import PopStringImpl from './string'
+import PopString from './string'
 
-export default class PopObjectImpl implements PopObject {
-  $equal(other: PopObject): PopBoolean {
+export default class PopObject implements IPopObject {
+  get type(): ObjectType {
+    return ObjectType.OBJECT
+  }
+
+  equal(other: IPopObject): IPopBoolean {
     return this === other ? C_TRUE : C_FALSE
   }
 
-  $toBoolean(): PopBoolean {
+  toBoolean(): IPopBoolean {
     return C_TRUE
   }
 
-  $toString(): PopString {
-    return new PopStringImpl('<Object>')
-  }
-
-  $type(): ObjectType {
-    return ObjectType.OBJECT
+  toString(): IPopString {
+    return new PopString('<Object>')
   }
 }

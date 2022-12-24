@@ -1,16 +1,16 @@
-import { PopObject } from './models/types'
+import { IPopObject } from './models/types'
 
 export const uninitialized = Symbol()
 
 export class Scope {
-  private map = new Map<string, PopObject | typeof uninitialized>()
+  private map = new Map<string, IPopObject | typeof uninitialized>()
   private readonly outer: Scope | null
 
   constructor(outer?: Scope) {
     this.outer = outer || null
   }
 
-  getValue(name: string): PopObject | typeof uninitialized | null {
+  getValue(name: string): IPopObject | typeof uninitialized | null {
     const object = this.map.get(name)
     if (object) {
       return object
@@ -32,11 +32,11 @@ export class Scope {
     return this.outer.hasValue(name)
   }
 
-  getOwnValue(name: string): PopObject | typeof uninitialized | null {
+  getOwnValue(name: string): IPopObject | typeof uninitialized | null {
     return this.map.get(name) ?? null
   }
 
-  setOwnValue(name: string, object: PopObject | typeof uninitialized): void {
+  setOwnValue(name: string, object: IPopObject | typeof uninitialized): void {
     this.map.set(name, object)
   }
 
