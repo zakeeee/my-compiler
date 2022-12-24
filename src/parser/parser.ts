@@ -372,6 +372,7 @@ export class Parser {
     const symbol = copySymbol(this.curSymbol)
     let returnValue: Expression | null = null
     if (!this.peekTokenIs(Token.SEMICOLON)) {
+      this.readNextSymbol()
       returnValue = this.parseExpression(Precedence.LOWEST)
     }
     if (!this.expectPeek(Token.SEMICOLON)) {
