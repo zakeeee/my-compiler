@@ -52,9 +52,7 @@ let foo2 = func () {
 
   test('parse', () => {
     const input = `\
-let a = 0, b = 1;
-let c;
-c = 2;
+let a = {"a": 1, "b": "foo"};
 // if (a < 1) {
 //   print("a < 1");
 // } else {

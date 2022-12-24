@@ -1,4 +1,5 @@
 import {
+  ArrayExpression,
   BlockStatement,
   BreakStatement,
   CallExpression,
@@ -8,6 +9,7 @@ import {
   ForStatement,
   FunctionExpression,
   FunctionStatement,
+  HashExpression,
   IdentifierExpression,
   IfStatement,
   InfixExpression,
@@ -23,14 +25,16 @@ import {
 } from 'src/ast'
 import { getTokenName, Token } from '../lexer'
 import { PopError } from './error'
+import PopArrayImpl from './models/impl/array'
 import { C_FALSE, C_TRUE } from './models/impl/boolean'
 import { builtinFunctions, PopBuiltinFunctionImpl } from './models/impl/builtins'
 import PopFunctionImpl from './models/impl/function'
+import PopHashImpl from './models/impl/hash'
 import { C_NULL } from './models/impl/null'
 import PopNumberImpl from './models/impl/number'
 import PopStringImpl from './models/impl/string'
 import { C_VOID, isVoid, VoidType } from './models/impl/void'
-import { PopFunction, PopObject } from './models/types'
+import { PopArray, PopFunction, PopHash, PopObject, PopString } from './models/types'
 import { Scope, uninitialized } from './scope'
 
 type EvalResult<T> = [PopError, null] | [null, T]
@@ -47,7 +51,6 @@ export function evalProgram(node: Program, scope: Scope): VoidType {
   for (const stmt of node.body) {
     const [err, val] = evalStatement(stmt, scope)
     if (err) {
-      err.pushStack(stmt.symbol.start)
       console.error(err.printStack())
       break
     }
@@ -335,6 +338,10 @@ function evalExpression(expr: Expression, scope: Scope): EvalResult<PopObject | 
       return evalIdentifierExpression(expr as IdentifierExpression, scope)
     case TreeNodeType.FUNCTION_EXPRESSION:
       return evalFunctionExpression(expr as FunctionExpression, scope)
+    case TreeNodeType.ARRAY_EXPRESSION:
+      return evalArrayExpression(expr as ArrayExpression, scope)
+    case TreeNodeType.HASH_EXPRESSION:
+      return evalHashExpression(expr as HashExpression, scope)
     default: {
       const err = new PopError(`invalid expression type "${expr.nodeType}"`)
       err.pushStack(expr.symbol.start)
@@ -372,7 +379,8 @@ function evalPrefixExpression(expr: PrefixExpression, scope: Scope): EvalResult<
           try {
             return [null, func.call(operand)]
           } catch (error) {
-            const err = new PopError(`${error}`)
+            const message = error instanceof Error ? error.message : `${error}`
+            const err = new PopError(message)
             err.pushStack(expr.operator.start)
             return [err, null]
           }
@@ -406,6 +414,7 @@ const infixOpTokenToSlotNameMap = {
   [Token.BIT_AND_EQUAL]: '$bitAnd',
   [Token.BIT_OR_EQUAL]: '$bitOr',
   [Token.BIT_XOR_EQUAL]: '$bitXor',
+  [Token.L_BRACKET]: '$index',
 } as Record<Token, string>
 
 const assignmentOperators = [
@@ -531,7 +540,8 @@ function evalInfixExpression(
           try {
             return [null, func.call(leftOperand, rightOperand)]
           } catch (error) {
-            const err = new PopError(`${error}`)
+            const message = error instanceof Error ? error.message : `${error}`
+            const err = new PopError(message)
             err.pushStack(expr.operator.start)
             return [err, null]
           }
@@ -612,7 +622,8 @@ function evalCallExpression(expr: CallExpression, scope: Scope): EvalResult<Void
     try {
       return [null, func.$call(args)]
     } catch (error) {
-      const err = new PopError(`${error}`)
+      const message = error instanceof Error ? error.message : `${error}`
+      const err = new PopError(message)
       err.pushStack(expr.symbol.start)
       return [err, null]
     }
@@ -693,4 +704,44 @@ function evalIdentifierExpression(expr: IdentifierExpression, scope: Scope): Eva
 function evalFunctionExpression(expr: FunctionExpression, scope: Scope): EvalResult<PopFunction> {
   const parameters = expr.params.map((param) => param.symbol.literal)
   return [null, new PopFunctionImpl(parameters, expr.body, scope)]
+}
+
+function evalArrayExpression(expr: ArrayExpression, scope: Scope): EvalResult<PopArray> {
+  const elements: PopObject[] = []
+  for (const el of expr.elements) {
+    const [err, val] = evalExpression(el, scope)
+    if (err) {
+      return [err, null]
+    }
+    if (isVoid(val)) {
+      const err = new PopError(`arr element is no value`)
+      err.pushStack(el.symbol.start)
+      return [err, null]
+    }
+    elements.push(val)
+  }
+  return [null, new PopArrayImpl(elements)]
+}
+
+function evalHashExpression(expr: HashExpression, scope: Scope): EvalResult<PopHash> {
+  const elements = new Map<string, PopObject>()
+  const { keyValueSequence } = expr
+  for (const keyValue of keyValueSequence) {
+    const [err1, key] = evalLiteralExpression(keyValue.key, scope)
+    if (err1) {
+      return [err1, null]
+    }
+
+    const [err2, val] = evalExpression(keyValue.value, scope)
+    if (err2) {
+      return [err2, null]
+    }
+    if (isVoid(val)) {
+      const err = new PopError(`hash item value is no value`)
+      err.pushStack(keyValue.value.symbol.start)
+      return [err, null]
+    }
+    elements.set((key as PopString).$unwrap(), val)
+  }
+  return [null, new PopHashImpl(elements)]
 }

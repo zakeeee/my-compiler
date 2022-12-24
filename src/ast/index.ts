@@ -3,6 +3,7 @@ import { LexicalSymbol } from '../lexer'
 export enum TreeNodeType {
   PROGRAM = 'program',
   VARIABLE_DECLARATION = 'variableDeclaration',
+  KEY_VALUE = 'keyValue',
 
   BLOCK_STATEMENT = 'blockStatement',
   EMPTY_STATEMENT = 'emptyStatement',
@@ -23,6 +24,8 @@ export enum TreeNodeType {
   CALL_EXPRESSION = 'callExpression',
   LITERAL_EXPRESSION = 'literalExpression',
   IDENTIFIER_EXPRESSION = 'identifierExpression',
+  ARRAY_EXPRESSION = 'arrayExpression',
+  HASH_EXPRESSION = 'hashExpression',
 }
 
 export interface TreeNode {
@@ -178,6 +181,12 @@ export class LiteralExpression implements Expression {
   constructor(public symbol: LexicalSymbol, public value: unknown) {}
 }
 
+export class StringLiteralExpression implements Expression {
+  nodeType = TreeNodeType.LITERAL_EXPRESSION
+
+  constructor(public symbol: LexicalSymbol, public value: string) {}
+}
+
 export class IdentifierExpression implements Expression {
   nodeType = TreeNodeType.IDENTIFIER_EXPRESSION
 
@@ -192,4 +201,26 @@ export class FunctionExpression implements Expression {
     public params: IdentifierExpression[],
     public body: BlockStatement
   ) {}
+}
+
+export class ArrayExpression implements Expression {
+  nodeType = TreeNodeType.ARRAY_EXPRESSION
+
+  constructor(public symbol: LexicalSymbol, public elements: Expression[]) {}
+}
+
+export class KeyValue implements TreeNode {
+  nodeType = TreeNodeType.KEY_VALUE
+
+  constructor(
+    public symbol: LexicalSymbol,
+    public key: StringLiteralExpression,
+    public value: Expression
+  ) {}
+}
+
+export class HashExpression implements Expression {
+  nodeType = TreeNodeType.HASH_EXPRESSION
+
+  constructor(public symbol: LexicalSymbol, public keyValueSequence: KeyValue[]) {}
 }

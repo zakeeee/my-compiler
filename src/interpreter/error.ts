@@ -14,7 +14,7 @@ export class PopError {
   }
 
   printStack(): string {
-    return this.errorStack.reverse().join('\n')
+    return this.errorStack.join('\n')
   }
 }
 

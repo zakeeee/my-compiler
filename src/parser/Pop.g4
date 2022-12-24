@@ -53,7 +53,9 @@ expression
   | callExpression
   | literalExpression
   | identifierExpression
-  | '(' expression ')'
+  | groupedExpression
+  | arrayExpression
+  | indexExpression
   ;
 
 prefixExpression: '+' expression | '-' expression | '~' expression | '!' expression;
@@ -87,6 +89,20 @@ callExpression: expression '(' arguments ')';
 literalExpression: NullLiteral | BooleanLiteral | StringLiteral | DecimalLiteral;
 
 identifierExpression: Identifier;
+
+groupedExpression: '(' expression ')';
+
+arrayExpression: '[' expressionSequence? ']';
+
+indexExpression: expression '[' expression ']';
+
+stringLiteralExpression: StringLiteral;
+
+keyValue: stringLiteralExpression ':' expression;
+
+keyValueSequence: keyValue (',' keyValue)*;
+
+hashExpression: '{' keyValueSequence? '}';
 
 keywords: LET | TRUE | FALSE | NULL | FUNC | IF | ELSE | FOR | WHILE | BREAK | CONTINUE | RETURN;
 

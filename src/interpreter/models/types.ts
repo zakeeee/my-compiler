@@ -6,6 +6,8 @@ export enum ObjectType {
   STRING = 'STRING',
   FUNCTION = 'FUNCTION',
   BUILTIN_FUNCTION = 'BUILTIN_FUNCTION',
+  ARRAY = 'ARRAY',
+  HASH = 'HASH',
 }
 
 export interface Wrapper<T> {
@@ -24,6 +26,10 @@ export interface Comparable {
   $greaterThanEqual(other: PopObject): PopBoolean
   $lessThan(other: PopObject): PopBoolean
   $lessThanEqual(other: PopObject): PopBoolean
+}
+
+export interface Indexable {
+  $index(index: PopObject): PopObject
 }
 
 export interface PopObject {
@@ -66,3 +72,9 @@ export interface PopString extends PopObject, Wrapper<string> {
   $add(other: PopObject): PopString
   $length(): PopNumber
 }
+
+export interface PopArray extends PopObject, Indexable {
+  $length(): PopNumber
+}
+
+export interface PopHash extends PopObject, Indexable {}

@@ -1,4 +1,5 @@
 import {
+  ArrayExpression,
   BlockStatement,
   BreakStatement,
   CallExpression,
@@ -9,9 +10,11 @@ import {
   ForStatement,
   FunctionExpression,
   FunctionStatement,
+  HashExpression,
   IdentifierExpression,
   IfStatement,
   InfixExpression,
+  KeyValue,
   LetExpression,
   LetStatement,
   LiteralExpression,
@@ -19,6 +22,7 @@ import {
   Program,
   ReturnStatement,
   Statement,
+  StringLiteralExpression,
   VariableDeclaration,
   WhileStatement,
 } from '../ast'
@@ -56,6 +60,7 @@ enum Precedence {
   PRODUCT, // *, /
   PREFIX, // +, -, !
   CALL,
+  INDEX, // [
 }
 
 const precedences = {
@@ -85,6 +90,7 @@ const precedences = {
   [Token.SLASH]: Precedence.PRODUCT,
   [Token.PERCENT]: Precedence.PRODUCT,
   [Token.L_PAREN]: Precedence.CALL,
+  [Token.L_BRACKET]: Precedence.INDEX,
 } as Readonly<Record<Token, Precedence>>
 
 export class Parser {
@@ -107,6 +113,8 @@ export class Parser {
       }
     )
     this.prefixParseFuncs.set(Token.L_PAREN, this.parseGroupedExpression.bind(this))
+    this.prefixParseFuncs.set(Token.L_BRACKET, this.parseArrayExpression.bind(this))
+    this.prefixParseFuncs.set(Token.L_BRACE, this.parseHashExpression.bind(this))
     this.prefixParseFuncs.set(Token.LET, this.parseLetExpression.bind(this))
     this.prefixParseFuncs.set(Token.FUNC, this.parseFunctionExpression.bind(this))
     ;[
@@ -139,6 +147,7 @@ export class Parser {
       this.infixParseFuncs.set(token, this.parseInfixExpression.bind(this))
     })
     this.infixParseFuncs.set(Token.L_PAREN, this.parseCallExpression.bind(this))
+    this.infixParseFuncs.set(Token.L_BRACKET, this.parseIndexExpression.bind(this))
   }
 
   parseProgram(): Program {
@@ -356,6 +365,16 @@ export class Parser {
     return new LiteralExpression(symbol, value)
   }
 
+  private parseStringLiteralExpression(): StringLiteralExpression {
+    const symbol = { ...this.currentSymbol }
+    if (!this.currentTokenIs(Token.STRING_LITERAL)) {
+      throw new ParseError(this.currentSymbol)
+    }
+    const value = this.currentSymbol.literal
+    this.readNextSymbol()
+    return new StringLiteralExpression(symbol, value)
+  }
+
   private parsePrefixExpression(): PrefixExpression {
     const symbol = { ...this.currentSymbol }
     const operator = { ...this.currentSymbol }
@@ -422,6 +441,58 @@ export class Parser {
     }
     this.parseToken(Token.R_PAREN)
     return new CallExpression(symbol, callable, args)
+  }
+
+  private parseArrayExpression(): ArrayExpression {
+    const symbol = { ...this.currentSymbol }
+    this.parseToken(Token.L_BRACKET)
+    const elements: Expression[] = []
+    if (!this.currentTokenIs(Token.R_BRACKET)) {
+      elements.push(this.parseExpression(Precedence.LOWEST))
+      while (this.currentTokenIs(Token.COMMA)) {
+        this.parseToken(Token.COMMA)
+        elements.push(this.parseExpression(Precedence.LOWEST))
+      }
+    }
+    this.parseToken(Token.R_BRACKET)
+    return new ArrayExpression(symbol, elements)
+  }
+
+  private parseKeyValue(): KeyValue {
+    if (!this.currentTokenIs(Token.STRING_LITERAL)) {
+      throw new ParseError(this.currentSymbol)
+    }
+    const symbol = { ...this.currentSymbol }
+    const key = this.parseStringLiteralExpression()
+    this.parseToken(Token.COLON)
+    const value = this.parseExpression(Precedence.LOWEST)
+    return new KeyValue(symbol, key, value)
+  }
+
+  private parseHashExpression(): HashExpression {
+    const symbol = { ...this.currentSymbol }
+    this.parseToken(Token.L_BRACE)
+    const keyValues: KeyValue[] = []
+    if (!this.currentTokenIs(Token.R_BRACE)) {
+      keyValues.push(this.parseKeyValue())
+
+      while (this.currentTokenIs(Token.COMMA)) {
+        this.parseToken(Token.COMMA)
+        keyValues.push(this.parseKeyValue())
+      }
+    }
+    this.parseToken(Token.R_BRACE)
+    return new HashExpression(symbol, keyValues)
+  }
+
+  private parseIndexExpression(left: Expression): InfixExpression {
+    const indexable = left
+    const symbol = { ...this.currentSymbol }
+    const operator = { ...this.currentSymbol }
+    this.parseToken(Token.L_BRACKET)
+    const index = this.parseExpression(Precedence.LOWEST)
+    this.parseToken(Token.R_BRACKET)
+    return new InfixExpression(symbol, operator, indexable, index)
   }
 
   private readNextSymbol() {
