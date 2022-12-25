@@ -1,220 +1,268 @@
-import { LexicalSymbol } from '../lexer'
+import { Token } from 'src/lexer'
 
-export enum TreeNodeType {
-  PROGRAM = 'program',
-  VARIABLE_DECLARATION = 'variableDeclaration',
-  KEY_VALUE = 'keyValue',
+export interface ITreeNodeVisitor {
+  visitProgram(node: Program): any
 
-  BLOCK_STATEMENT = 'blockStatement',
-  EMPTY_STATEMENT = 'emptyStatement',
-  EXPRESSION_STATEMENT = 'expressionStatement',
-  LET_STATEMENT = 'letStatement',
-  FUNCTION_STATEMENT = 'functionStatement',
-  IF_STATEMENT = 'ifStatement',
-  FOR_STATEMENT = 'forStatement',
-  WHILE_STATEMENT = 'whileStatement',
-  CONTINUE_STATEMENT = 'continueStatement',
-  BREAK_STATEMENT = 'breakStatement',
-  RETURN_STATEMENT = 'returnStatement',
+  visitBlockStatement(node: BlockStatement): any
+  visitEmptyStatement(node: EmptyStatement): any
+  visitExpressionStatement(node: ExpressionStatement): any
+  visitLetStatement(node: LetStatement): any
+  visitFunctionStatement(node: FunctionStatement): any
+  visitIfStatement(node: IfStatement): any
+  visitForStatement(node: ForStatement): any
+  visitWhileStatement(node: WhileStatement): any
+  visitContinueStatement(node: ContinueStatement): any
+  visitBreakStatement(node: BreakStatement): any
+  visitReturnStatement(node: ReturnStatement): any
 
-  PREFIX_EXPRESSION = 'prefixExpression',
-  INFIX_EXPRESSION = 'infixExpression',
-  LET_EXPRESSION = 'letExpression',
-  FUNCTION_EXPRESSION = 'functionExpression',
-  CALL_EXPRESSION = 'callExpression',
-  LITERAL_EXPRESSION = 'literalExpression',
-  IDENTIFIER_EXPRESSION = 'identifierExpression',
-  ARRAY_EXPRESSION = 'arrayExpression',
-  HASH_EXPRESSION = 'hashExpression',
+  visitPrefixExpression(node: PrefixExpression): any
+  visitInfixExpression(node: InfixExpression): any
+  visitVariableDeclaration(node: VariableDeclaration): any
+  visitLetExpression(node: LetExpression): any
+  visitCallExpression(node: CallExpression): any
+  visitLiteralExpression(node: LiteralExpression): any
+  visitIdentifierExpression(node: IdentifierExpression): any
+  visitFunctionExpression(node: FunctionExpression): any
+  visitArrayExpression(node: ArrayExpression): any
+  visitKeyValue(node: KeyValue): any
+  visitHashExpression(node: HashExpression): any
 }
 
-export interface ITreeNode {
-  nodeType: TreeNodeType
-  symbol: LexicalSymbol
+export interface ITreeNode<V extends keyof ITreeNodeVisitor> {
+  token: Token
+
+  accept<T extends ITreeNodeVisitor>(visitor: T): ReturnType<T[V]>
 }
 
-export class Program implements ITreeNode {
-  nodeType = TreeNodeType.PROGRAM
+export class Program implements ITreeNode<'visitProgram'> {
+  constructor(public token: Token, public body: Statement[]) {}
 
-  constructor(public symbol: LexicalSymbol, public body: Statement[]) {}
+  accept<T extends ITreeNodeVisitor>(visitor: T): ReturnType<T['visitProgram']> {
+    return visitor.visitProgram(this)
+  }
 }
 
-export interface Statement extends ITreeNode {}
+export type Statement =
+  | BlockStatement
+  | EmptyStatement
+  | ExpressionStatement
+  | LetStatement
+  | FunctionStatement
+  | IfStatement
+  | ForStatement
+  | WhileStatement
+  | ContinueStatement
+  | BreakStatement
+  | ReturnStatement
 
-export class BlockStatement implements Statement {
-  nodeType = TreeNodeType.BLOCK_STATEMENT
+export class BlockStatement implements ITreeNode<'visitBlockStatement'> {
+  constructor(public token: Token, public statements: Statement[]) {}
 
-  constructor(public symbol: LexicalSymbol, public statements: Statement[]) {}
+  accept<T extends ITreeNodeVisitor>(visitor: T): ReturnType<T['visitBlockStatement']> {
+    return visitor.visitBlockStatement(this)
+  }
 }
 
-export class EmptyStatement implements Statement {
-  nodeType = TreeNodeType.EMPTY_STATEMENT
+export class EmptyStatement implements ITreeNode<'visitEmptyStatement'> {
+  constructor(public token: Token) {}
 
-  constructor(public symbol: LexicalSymbol) {}
+  accept<T extends ITreeNodeVisitor>(visitor: T): ReturnType<T['visitEmptyStatement']> {
+    return visitor.visitEmptyStatement(this)
+  }
 }
 
-export class ExpressionStatement implements Statement {
-  nodeType = TreeNodeType.EXPRESSION_STATEMENT
+export class ExpressionStatement implements ITreeNode<'visitExpressionStatement'> {
+  constructor(public token: Token, public expression: Expression) {}
 
-  constructor(public symbol: LexicalSymbol, public expression: Expression) {}
+  accept<T extends ITreeNodeVisitor>(visitor: T): ReturnType<T['visitExpressionStatement']> {
+    return visitor.visitExpressionStatement(this)
+  }
 }
 
-export class LetStatement implements Statement {
-  nodeType = TreeNodeType.LET_STATEMENT
+export class LetStatement implements ITreeNode<'visitLetStatement'> {
+  constructor(public token: Token, public expression: LetExpression) {}
 
-  constructor(public symbol: LexicalSymbol, public expression: LetExpression) {}
+  accept<T extends ITreeNodeVisitor>(visitor: T): ReturnType<T['visitLetStatement']> {
+    return visitor.visitLetStatement(this)
+  }
 }
 
-export class FunctionStatement implements Statement {
-  nodeType = TreeNodeType.FUNCTION_STATEMENT
-
+export class FunctionStatement implements ITreeNode<'visitFunctionStatement'> {
   constructor(
-    public symbol: LexicalSymbol,
-    public identifier: LexicalSymbol,
-    public parameters: LexicalSymbol[],
+    public token: Token,
+    public identifier: Token,
+    public parameters: Token[],
     public body: BlockStatement
   ) {}
+
+  accept<T extends ITreeNodeVisitor>(visitor: T): ReturnType<T['visitFunctionStatement']> {
+    return visitor.visitFunctionStatement(this)
+  }
 }
 
-export class IfStatement implements Statement {
-  nodeType = TreeNodeType.IF_STATEMENT
-
+export class IfStatement implements ITreeNode<'visitIfStatement'> {
   constructor(
-    public symbol: LexicalSymbol,
+    public token: Token,
     public condition: Expression,
     public consequence: Statement,
     public alternative: Statement | null = null
   ) {}
+
+  accept<T extends ITreeNodeVisitor>(visitor: T): ReturnType<T['visitIfStatement']> {
+    return visitor.visitIfStatement(this)
+  }
 }
 
-export class ForStatement implements Statement {
-  nodeType = TreeNodeType.FOR_STATEMENT
-
+export class ForStatement implements ITreeNode<'visitForStatement'> {
   constructor(
-    public symbol: LexicalSymbol,
+    public token: Token,
     public body: Statement,
     public initialize: Expression | null = null,
     public condition: Expression | null = null,
     public afterEach: Expression | null = null
   ) {}
+
+  accept<T extends ITreeNodeVisitor>(visitor: T): ReturnType<T['visitForStatement']> {
+    return visitor.visitForStatement(this)
+  }
 }
 
-export class WhileStatement implements Statement {
-  nodeType = TreeNodeType.WHILE_STATEMENT
+export class WhileStatement implements ITreeNode<'visitWhileStatement'> {
+  constructor(public token: Token, public condition: Expression, public body: Statement) {}
 
-  constructor(public symbol: LexicalSymbol, public condition: Expression, public body: Statement) {}
+  accept<T extends ITreeNodeVisitor>(visitor: T): ReturnType<T['visitWhileStatement']> {
+    return visitor.visitWhileStatement(this)
+  }
 }
 
-export class ContinueStatement implements Statement {
-  nodeType = TreeNodeType.CONTINUE_STATEMENT
+export class ContinueStatement implements ITreeNode<'visitContinueStatement'> {
+  constructor(public token: Token) {}
 
-  constructor(public symbol: LexicalSymbol) {}
+  accept<T extends ITreeNodeVisitor>(visitor: T): ReturnType<T['visitContinueStatement']> {
+    return visitor.visitContinueStatement(this)
+  }
 }
 
-export class BreakStatement implements Statement {
-  nodeType = TreeNodeType.BREAK_STATEMENT
+export class BreakStatement implements ITreeNode<'visitBreakStatement'> {
+  constructor(public token: Token) {}
 
-  constructor(public symbol: LexicalSymbol) {}
+  accept<T extends ITreeNodeVisitor>(visitor: T): ReturnType<T['visitBreakStatement']> {
+    return visitor.visitBreakStatement(this)
+  }
 }
 
-export class ReturnStatement implements Statement {
-  nodeType = TreeNodeType.RETURN_STATEMENT
+export class ReturnStatement implements ITreeNode<'visitReturnStatement'> {
+  constructor(public token: Token, public returnValue: Expression | null = null) {}
 
-  constructor(public symbol: LexicalSymbol, public returnValue: Expression | null = null) {}
+  accept<T extends ITreeNodeVisitor>(visitor: T): ReturnType<T['visitReturnStatement']> {
+    return visitor.visitReturnStatement(this)
+  }
 }
 
-export interface Expression extends ITreeNode {}
+export type Expression =
+  | PrefixExpression
+  | InfixExpression
+  | LetExpression
+  | CallExpression
+  | LiteralExpression
+  | IdentifierExpression
+  | FunctionExpression
+  | ArrayExpression
+  | HashExpression
 
-export class PrefixExpression implements Expression {
-  nodeType = TreeNodeType.PREFIX_EXPRESSION
+export class PrefixExpression implements ITreeNode<'visitPrefixExpression'> {
+  constructor(public token: Token, public operator: Token, public operand: Expression) {}
 
+  accept<T extends ITreeNodeVisitor>(visitor: T): ReturnType<T['visitPrefixExpression']> {
+    return visitor.visitPrefixExpression(this)
+  }
+}
+
+export class InfixExpression implements ITreeNode<'visitInfixExpression'> {
   constructor(
-    public symbol: LexicalSymbol,
-    public operator: LexicalSymbol,
-    public operand: Expression
-  ) {}
-}
-
-export class InfixExpression implements Expression {
-  nodeType = TreeNodeType.INFIX_EXPRESSION
-
-  constructor(
-    public symbol: LexicalSymbol,
-    public operator: LexicalSymbol,
+    public token: Token,
+    public operator: Token,
     public left: Expression,
     public right: Expression
   ) {}
+
+  accept<T extends ITreeNodeVisitor>(visitor: T): ReturnType<T['visitInfixExpression']> {
+    return visitor.visitInfixExpression(this)
+  }
 }
 
-export class VariableDeclaration implements ITreeNode {
-  nodeType = TreeNodeType.VARIABLE_DECLARATION
+export class VariableDeclaration implements ITreeNode<'visitVariableDeclaration'> {
+  constructor(public token: Token, public identifier: Token, public value: Expression | null) {}
 
+  accept<T extends ITreeNodeVisitor>(visitor: T): ReturnType<T['visitVariableDeclaration']> {
+    return visitor.visitVariableDeclaration(this)
+  }
+}
+
+export class LetExpression implements ITreeNode<'visitLetExpression'> {
+  constructor(public token: Token, public variableDeclarationSequence: VariableDeclaration[]) {}
+
+  accept<T extends ITreeNodeVisitor>(visitor: T): ReturnType<T['visitLetExpression']> {
+    return visitor.visitLetExpression(this)
+  }
+}
+
+export class CallExpression implements ITreeNode<'visitCallExpression'> {
+  constructor(public token: Token, public callable: Expression, public args: Expression[]) {}
+
+  accept<T extends ITreeNodeVisitor>(visitor: T): ReturnType<T['visitCallExpression']> {
+    return visitor.visitCallExpression(this)
+  }
+}
+
+export class LiteralExpression implements ITreeNode<'visitLiteralExpression'> {
+  constructor(public token: Token, public value: unknown) {}
+
+  accept<T extends ITreeNodeVisitor>(visitor: T): ReturnType<T['visitLiteralExpression']> {
+    return visitor.visitLiteralExpression(this)
+  }
+}
+
+export class IdentifierExpression implements ITreeNode<'visitIdentifierExpression'> {
+  constructor(public token: Token) {}
+
+  accept<T extends ITreeNodeVisitor>(visitor: T): ReturnType<T['visitIdentifierExpression']> {
+    return visitor.visitIdentifierExpression(this)
+  }
+}
+
+export class FunctionExpression implements ITreeNode<'visitFunctionExpression'> {
   constructor(
-    public symbol: LexicalSymbol,
-    public identifier: LexicalSymbol,
-    public value: Expression | null
-  ) {}
-}
-
-export class LetExpression implements Expression {
-  nodeType = TreeNodeType.LET_EXPRESSION
-
-  constructor(
-    public symbol: LexicalSymbol,
-    public variableDeclarationSequence: VariableDeclaration[]
-  ) {}
-}
-
-export class CallExpression implements Expression {
-  nodeType = TreeNodeType.CALL_EXPRESSION
-
-  constructor(
-    public symbol: LexicalSymbol,
-    public callable: Expression,
-    public args: Expression[]
-  ) {}
-}
-
-export class LiteralExpression implements Expression {
-  nodeType = TreeNodeType.LITERAL_EXPRESSION
-
-  constructor(public symbol: LexicalSymbol, public value: unknown) {}
-}
-
-export class IdentifierExpression implements Expression {
-  nodeType = TreeNodeType.IDENTIFIER_EXPRESSION
-
-  constructor(public symbol: LexicalSymbol) {}
-}
-
-export class FunctionExpression implements Expression {
-  nodeType = TreeNodeType.FUNCTION_EXPRESSION
-
-  constructor(
-    public symbol: LexicalSymbol,
+    public token: Token,
     public params: IdentifierExpression[],
     public body: BlockStatement
   ) {}
+
+  accept<T extends ITreeNodeVisitor>(visitor: T): ReturnType<T['visitFunctionExpression']> {
+    return visitor.visitFunctionExpression(this)
+  }
 }
 
-export class ArrayExpression implements Expression {
-  nodeType = TreeNodeType.ARRAY_EXPRESSION
+export class ArrayExpression implements ITreeNode<'visitArrayExpression'> {
+  constructor(public token: Token, public elements: Expression[]) {}
 
-  constructor(public symbol: LexicalSymbol, public elements: Expression[]) {}
+  accept<T extends ITreeNodeVisitor>(visitor: T): ReturnType<T['visitArrayExpression']> {
+    return visitor.visitArrayExpression(this)
+  }
 }
 
-export class KeyValue implements ITreeNode {
-  nodeType = TreeNodeType.KEY_VALUE
+export class KeyValue implements ITreeNode<'visitKeyValue'> {
+  constructor(public token: Token, public key: LiteralExpression, public value: Expression) {}
 
-  constructor(
-    public symbol: LexicalSymbol,
-    public key: LiteralExpression,
-    public value: Expression
-  ) {}
+  accept<T extends ITreeNodeVisitor>(visitor: T): ReturnType<T['visitKeyValue']> {
+    return visitor.visitKeyValue(this)
+  }
 }
 
-export class HashExpression implements Expression {
-  nodeType = TreeNodeType.HASH_EXPRESSION
+export class HashExpression implements ITreeNode<'visitHashExpression'> {
+  constructor(public token: Token, public keyValueSequence: KeyValue[]) {}
 
-  constructor(public symbol: LexicalSymbol, public keyValueSequence: KeyValue[]) {}
+  accept<T extends ITreeNodeVisitor>(visitor: T): ReturnType<T['visitHashExpression']> {
+    return visitor.visitHashExpression(this)
+  }
 }

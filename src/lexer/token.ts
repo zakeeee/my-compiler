@@ -1,8 +1,9 @@
-export enum Token {
+import { IPosition } from 'src/types'
+
+export enum TokenType {
   // special
   ILLEGAL = -2,
   EOF,
-  COMMENT,
 
   // literals
   IDENTIFIER,
@@ -27,13 +28,13 @@ export enum Token {
   ASSIGN, // =
   PLUS, // +
   MINUS, // -
-  ASTERISK, // *
+  STAR, // *
   SLASH, // /
   BACK_SLASH, // \
   PERCENT, // %
   EQUAL, // ==
-  NOT, // !
-  NOT_EQUAL, // !=
+  BANG, // !
+  BANG_EQUAL, // !=
   GREATER_THAN, // >
   GREATER_THAN_EQUAL, // >=
   LESS_THAN, // <
@@ -44,9 +45,9 @@ export enum Token {
   BIT_NOT, // ~
   LOGIC_AND, // &&
   LOGIC_OR, // ||
-  MULTIPLY_EQUAL, // *=
-  DIVIDE_EQUAL, // /=
-  MODULO_EQUAL, // %=
+  STAR_EQUAL, // *=
+  SLASH_EQUAL, // /=
+  PERCENT_EQUAL, // %=
   PLUS_EQUAL, // +=
   MINUS_EQUAL, // -=
   BIT_AND_EQUAL, // &=
@@ -57,7 +58,7 @@ export enum Token {
   SEMICOLON, // ;
   DOT, // .
   COLON, // :
-  QUESTION_MARK, // ?
+  QUESTION, // ?
   L_PAREN, // (
   R_PAREN, // )
   L_BRACE, // {
@@ -66,96 +67,106 @@ export enum Token {
   R_BRACKET, // ]
 }
 
-const tokenNameMap = Object.freeze({
+const tokenTypeNameMap = Object.freeze({
   // special
-  [Token.ILLEGAL]: 'Illegal',
-  [Token.EOF]: 'EOF',
-  [Token.COMMENT]: 'Comment',
+  [TokenType.ILLEGAL]: 'Illegal',
+  [TokenType.EOF]: 'EOF',
 
-  [Token.IDENTIFIER]: 'Identifier',
-  [Token.NUMBER_LITERAL]: 'NumberLiteral',
-  [Token.STRING_LITERAL]: 'StringLiteral',
+  [TokenType.IDENTIFIER]: 'Identifier',
+  [TokenType.NUMBER_LITERAL]: 'NumberLiteral',
+  [TokenType.STRING_LITERAL]: 'StringLiteral',
 
   // keywords
-  [Token.LET]: 'let',
-  [Token.TRUE]: 'true',
-  [Token.FALSE]: 'false',
-  [Token.NULL]: 'null',
-  [Token.FUNC]: 'func',
-  [Token.IF]: 'if',
-  [Token.ELSE]: 'else',
-  [Token.FOR]: 'for',
-  [Token.WHILE]: 'while',
-  [Token.BREAK]: 'break',
-  [Token.CONTINUE]: 'continue',
-  [Token.RETURN]: 'return',
+  [TokenType.LET]: 'let',
+  [TokenType.TRUE]: 'true',
+  [TokenType.FALSE]: 'false',
+  [TokenType.NULL]: 'null',
+  [TokenType.FUNC]: 'func',
+  [TokenType.IF]: 'if',
+  [TokenType.ELSE]: 'else',
+  [TokenType.FOR]: 'for',
+  [TokenType.WHILE]: 'while',
+  [TokenType.BREAK]: 'break',
+  [TokenType.CONTINUE]: 'continue',
+  [TokenType.RETURN]: 'return',
 
   // operators and punctuations
-  [Token.ASSIGN]: '=',
-  [Token.PLUS]: '+',
-  [Token.MINUS]: '-',
-  [Token.ASTERISK]: '*',
-  [Token.SLASH]: '/',
-  [Token.BACK_SLASH]: '\\',
-  [Token.PERCENT]: '%',
-  [Token.EQUAL]: '==',
-  [Token.NOT]: '!',
-  [Token.NOT_EQUAL]: '!=',
-  [Token.GREATER_THAN]: '>',
-  [Token.GREATER_THAN_EQUAL]: '>=',
-  [Token.LESS_THAN]: '<',
-  [Token.LESS_THAN_EQUAL]: '<=',
-  [Token.BIT_AND]: '&',
-  [Token.BIT_OR]: '|',
-  [Token.BIT_XOR]: '^',
-  [Token.BIT_NOT]: '~',
-  [Token.LOGIC_AND]: '&&',
-  [Token.LOGIC_OR]: '||',
-  [Token.MULTIPLY_EQUAL]: '*=',
-  [Token.DIVIDE_EQUAL]: '/=',
-  [Token.MODULO_EQUAL]: '%=',
-  [Token.PLUS_EQUAL]: '+=',
-  [Token.MINUS_EQUAL]: '-=',
-  [Token.BIT_AND_EQUAL]: '&=',
-  [Token.BIT_OR_EQUAL]: '|=',
-  [Token.BIT_XOR_EQUAL]: '^=',
+  [TokenType.ASSIGN]: '=',
+  [TokenType.PLUS]: '+',
+  [TokenType.MINUS]: '-',
+  [TokenType.STAR]: '*',
+  [TokenType.SLASH]: '/',
+  [TokenType.BACK_SLASH]: '\\',
+  [TokenType.PERCENT]: '%',
+  [TokenType.EQUAL]: '==',
+  [TokenType.BANG]: '!',
+  [TokenType.BANG_EQUAL]: '!=',
+  [TokenType.GREATER_THAN]: '>',
+  [TokenType.GREATER_THAN_EQUAL]: '>=',
+  [TokenType.LESS_THAN]: '<',
+  [TokenType.LESS_THAN_EQUAL]: '<=',
+  [TokenType.BIT_AND]: '&',
+  [TokenType.BIT_OR]: '|',
+  [TokenType.BIT_XOR]: '^',
+  [TokenType.BIT_NOT]: '~',
+  [TokenType.LOGIC_AND]: '&&',
+  [TokenType.LOGIC_OR]: '||',
+  [TokenType.STAR_EQUAL]: '*=',
+  [TokenType.SLASH_EQUAL]: '/=',
+  [TokenType.PERCENT_EQUAL]: '%=',
+  [TokenType.PLUS_EQUAL]: '+=',
+  [TokenType.MINUS_EQUAL]: '-=',
+  [TokenType.BIT_AND_EQUAL]: '&=',
+  [TokenType.BIT_OR_EQUAL]: '|=',
+  [TokenType.BIT_XOR_EQUAL]: '^=',
 
-  [Token.COMMA]: ',',
-  [Token.SEMICOLON]: ';',
-  [Token.DOT]: '.',
-  [Token.COLON]: ':',
-  [Token.QUESTION_MARK]: '?',
-  [Token.L_PAREN]: '(',
-  [Token.R_PAREN]: ')',
-  [Token.L_BRACE]: '{',
-  [Token.R_BRACE]: '}',
-  [Token.L_BRACKET]: '[',
-  [Token.R_BRACKET]: ']',
+  [TokenType.COMMA]: ',',
+  [TokenType.SEMICOLON]: ';',
+  [TokenType.DOT]: '.',
+  [TokenType.COLON]: ':',
+  [TokenType.QUESTION]: '?',
+  [TokenType.L_PAREN]: '(',
+  [TokenType.R_PAREN]: ')',
+  [TokenType.L_BRACE]: '{',
+  [TokenType.R_BRACE]: '}',
+  [TokenType.L_BRACKET]: '[',
+  [TokenType.R_BRACKET]: ']',
 })
 
-export function getTokenName(token: Token): string {
-  return tokenNameMap[token]
+export function getTokenName(tokenType: TokenType): string {
+  return tokenTypeNameMap[tokenType]
 }
 
-const keywordTokenMap = Object.freeze({
-  let: Token.LET,
-  true: Token.TRUE,
-  false: Token.FALSE,
-  null: Token.NULL,
-  func: Token.FUNC,
-  if: Token.IF,
-  else: Token.ELSE,
-  for: Token.FOR,
-  while: Token.WHILE,
-  break: Token.BREAK,
-  continue: Token.CONTINUE,
-  return: Token.RETURN,
+const keywordTokenTypeMap = Object.freeze({
+  let: TokenType.LET,
+  true: TokenType.TRUE,
+  false: TokenType.FALSE,
+  null: TokenType.NULL,
+  func: TokenType.FUNC,
+  if: TokenType.IF,
+  else: TokenType.ELSE,
+  for: TokenType.FOR,
+  while: TokenType.WHILE,
+  break: TokenType.BREAK,
+  continue: TokenType.CONTINUE,
+  return: TokenType.RETURN,
 })
 
-export function isKeyword(word: string): word is keyof typeof keywordTokenMap {
-  return keywordTokenMap.hasOwnProperty(word)
+export function isKeyword(word: string): word is keyof typeof keywordTokenTypeMap {
+  return keywordTokenTypeMap.hasOwnProperty(word)
 }
 
-export function getKeywordToken<T extends keyof typeof keywordTokenMap>(keyword: T): Token {
-  return keywordTokenMap[keyword]
+export function getKeywordTokenType<T extends keyof typeof keywordTokenTypeMap>(
+  keyword: T
+): TokenType {
+  return keywordTokenTypeMap[keyword]
+}
+
+export class Token {
+  constructor(
+    public type: TokenType,
+    public lexeme: string,
+    public start: IPosition,
+    public end: IPosition
+  ) {}
 }

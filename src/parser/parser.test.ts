@@ -1,7 +1,7 @@
-import { Lexer } from '../lexer'
-import { describe, test } from 'vitest'
-import { Parser } from './parser'
 import { inspect } from 'node:util'
+import { describe, test } from 'vitest'
+import { Lexer } from '../lexer'
+import { Parser } from './parser'
 
 describe('Parser', () => {
   test('let statement', () => {
@@ -15,7 +15,7 @@ let f = e(1, 2, bar("asdf", foo));
 `
     const lexer = new Lexer(input)
     const parser = new Parser(lexer)
-    const prog = parser.parseProgram()
+    const prog = parser.parse()
     // console.log(inspect(prog, false, null));
   })
 
@@ -33,7 +33,7 @@ let foo2 = func () {
 `
     const lexer = new Lexer(input)
     const parser = new Parser(lexer)
-    const prog = parser.parseProgram()
+    const prog = parser.parse()
     // console.log(inspect(prog, false, null));
   })
 
@@ -46,7 +46,7 @@ let foo2 = func () {
 `
     const lexer = new Lexer(input)
     const parser = new Parser(lexer)
-    const prog = parser.parseProgram()
+    const prog = parser.parse()
     // console.log(inspect(prog, false, null));
   })
 
@@ -57,7 +57,7 @@ let b = [1, 2, 3];
 `
     const lexer = new Lexer(input)
     const parser = new Parser(lexer)
-    const prog = parser.parseProgram()
-    // console.log(inspect(prog, false, null));
+    const prog = parser.parse()
+    console.log(inspect(prog, false, null))
   })
 })
