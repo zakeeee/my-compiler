@@ -235,7 +235,7 @@ export class Parser {
   private parseBlockStatement = (): BlockStatement => {
     const token = copyToken(this.curToken)
     const statements: Statement[] = []
-    while (!this.peekTokenIs(TokenType.R_BRACE)) {
+    while (!this.peekTokenIs(TokenType.R_BRACE) && !this.peekTokenIs(TokenType.EOF)) {
       this.readNextToken()
       try {
         const statement = this.parseStatement()
@@ -384,7 +384,7 @@ export class Parser {
     const prefixParseFunc = this.prefixParseFuncs.get(this.curToken.type)
     if (!prefixParseFunc) {
       throw parseError(
-        `cannot parse token of type "${getTokenName(this.curToken.type)}"`,
+        `unexpected token of type "${getTokenName(this.curToken.type)}"`,
         this.curToken
       )
     }
@@ -450,7 +450,7 @@ export class Parser {
         break
       default:
         throw parseError(
-          `cannot parse literal of type "${getTokenName(this.curToken.type)}"`,
+          `unexpected token of type "${getTokenName(this.curToken.type)}"`,
           this.curToken
         )
     }
