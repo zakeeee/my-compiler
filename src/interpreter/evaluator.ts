@@ -219,45 +219,18 @@ export default class Evaluator implements ITreeNodeVisitor {
       afterEach: afterEachExpr,
       body: bodyStatement,
     } = node
-    if (initializeExpr) {
-      const [err] = initializeExpr.accept(this)
-      if (err) {
-        return [err, null]
-      }
-    }
 
-    let condition = true
-    if (conditionExpr) {
-      const [err, val] = conditionExpr.accept(this)
-      if (err) {
-        return [err, null]
-      }
-      if (isVoid(val)) {
-        const err = new PopError(`condition is no value`)
-        err.pushStack(conditionExpr.token.start)
-        return [err, null]
-      }
-      condition = val.toBoolean().unwrap()
-    }
-    while (condition) {
-      const [err, val] = bodyStatement.accept(this)
-      if (err) {
-        return [err, null]
-      }
-      if (val instanceof BreakStatementEvalResult) {
-        break
-      }
-      if (val instanceof ReturnStatementEvalResult) {
-        return [null, val]
-      }
-
-      if (afterEachExpr) {
-        const [err] = afterEachExpr.accept(this)
+    const { curScope: prevScope } = this
+    this.curScope = new Scope(prevScope)
+    try {
+      if (initializeExpr) {
+        const [err] = initializeExpr.accept(this)
         if (err) {
           return [err, null]
         }
       }
 
+      let condition = true
       if (conditionExpr) {
         const [err, val] = conditionExpr.accept(this)
         if (err) {
@@ -270,8 +243,42 @@ export default class Evaluator implements ITreeNodeVisitor {
         }
         condition = val.toBoolean().unwrap()
       }
+      while (condition) {
+        const [err, val] = bodyStatement.accept(this)
+        if (err) {
+          return [err, null]
+        }
+        if (val instanceof BreakStatementEvalResult) {
+          break
+        }
+        if (val instanceof ReturnStatementEvalResult) {
+          return [null, val]
+        }
+
+        if (afterEachExpr) {
+          const [err] = afterEachExpr.accept(this)
+          if (err) {
+            return [err, null]
+          }
+        }
+
+        if (conditionExpr) {
+          const [err, val] = conditionExpr.accept(this)
+          if (err) {
+            return [err, null]
+          }
+          if (isVoid(val)) {
+            const err = new PopError(`condition is no value`)
+            err.pushStack(conditionExpr.token.start)
+            return [err, null]
+          }
+          condition = val.toBoolean().unwrap()
+        }
+      }
+      return [null, C_VOID]
+    } finally {
+      this.curScope = prevScope
     }
-    return [null, C_VOID]
   }
 
   visitWhileStatement(node: WhileStatement): EvalResult<VoidType | ReturnStatementEvalResult> {

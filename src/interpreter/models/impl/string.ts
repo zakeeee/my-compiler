@@ -37,7 +37,7 @@ export default class PopString implements IPopString {
   }
 
   toString(): IPopString {
-    return this
+    return new PopString(`"${this.value}"`)
   }
 
   unwrap(): string {
