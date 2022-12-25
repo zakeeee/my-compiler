@@ -8,13 +8,14 @@ statement
   | emptyStatement
   | expressionStatement
   | letStatement
-  | functionStatement
   | ifStatement
   | forStatement
   | whileStatement
   | continueStatement
   | breakStatement
   | returnStatement
+  | functionStatement
+  | classStatement
   ;
 
 statementList: statement+;
@@ -23,13 +24,9 @@ blockStatement: '{' statementList? '}';
 
 emptyStatement: ';';
 
-expressionStatement: expressionSequence ';';
+expressionStatement: expression ';';
 
 letStatement: letExpression ';';
-
-parameterSequence: Identifier (',' Identifier)*;
-
-functionStatement: FUNC Identifier '(' parameterSequence? ')' blockStatement;
 
 ifStatement: IF '(' expression ')' statement (ELSE statement)?;
 
@@ -43,19 +40,32 @@ breakStatement: BREAK ';';
 
 returnStatement: RETURN expression? ';';
 
+functionStatement: FUNC Identifier '(' parameterSequence? ')' blockStatement;
+
+classStatement: CLASS Identifier (EXTENDS Identifier)? '{' methodStatement* '}';
+
+parameterSequence: Identifier (',' Identifier)*;
+
+methodStatement: STATIC? Identifier '(' parameterSequence? ')' blockStatement;
+
 expressionSequence: expression (',' expression)*;
 
 expression
-  : prefixExpression
-  | infixExpression
-  | letExpression
-  | functionExpression
-  | callExpression
-  | literalExpression
-  | identifierExpression
-  | groupedExpression
-  | arrayExpression
-  | indexExpression
+  : prefixExpression       # PrefixExpression
+  | infixExpression        # InfixExpression
+  | assignmentExpression   # AssignmentExpression
+  | letExpression          # LetExpression
+  | functionExpression     # FunctionExpression
+  | callExpression         # CallExpression
+  | literalExpression      # LiteralExpression
+  | identifierExpression   # IdentifierExpression
+  | groupedExpression      # GroupedExpression
+  | arrayLiteralExpression # ArrayLiteralExpression
+  | hashLiteralExpression  # HashLiteralExpression
+  | indexExpression        # IndexExpression
+  | getPropertyExpression  # GetPropertyExpression
+  | thisExpression         # ThisExpression
+  | newExpression          # NewExpression
   ;
 
 prefixExpression: '+' expression | '-' expression | '~' expression | '!' expression;
@@ -70,15 +80,25 @@ infixExpression
   | expression '^' expression
   | expression '&&' expression
   | expression '||' expression
-  | expression '=' expression
-  | expression ('*=' | '/=' | '%=' | '+=' | '-=' | '&=' | '|=' | '^=') expression
+  ;
+
+assignmentExpression
+  : (identifierExpression | getPropertyExpression | indexExpression) (
+    '='
+    | '*='
+    | '/='
+    | '%='
+    | '+='
+    | '-='
+    | '&='
+    | '|='
+    | '^='
+  ) expression
   ;
 
 variableDeclaration: Identifier ('=' expression)?;
 
-variableDeclarationSequence: variableDeclaration (',' variableDeclaration)*;
-
-letExpression: LET variableDeclarationSequence;
+letExpression: LET variableDeclaration (',' variableDeclaration)*;
 
 functionExpression: FUNC '(' parameterSequence? ')' blockStatement;
 
@@ -92,17 +112,39 @@ identifierExpression: Identifier;
 
 groupedExpression: '(' expression ')';
 
-arrayExpression: '[' expressionSequence? ']';
+arrayLiteralExpression: '[' expressionSequence? ']';
 
 indexExpression: expression '[' expression ']';
 
 keyValue: StringLiteral ':' expression;
 
-keyValueSequence: keyValue (',' keyValue)*;
+hashLiteralExpression: '{' (keyValue (',' keyValue)*)? '}';
 
-hashExpression: '{' keyValueSequence? '}';
+getPropertyExpression: expression '.' Identifier;
 
-keywords: LET | TRUE | FALSE | NULL | FUNC | IF | ELSE | FOR | WHILE | BREAK | CONTINUE | RETURN;
+newExpression: NEW Identifier '(' arguments ')';
+
+thisExpression: THIS;
+
+keywords
+  : LET
+  | TRUE
+  | FALSE
+  | NULL
+  | FUNC
+  | IF
+  | ELSE
+  | FOR
+  | WHILE
+  | BREAK
+  | CONTINUE
+  | RETURN
+  | CLASS
+  | EXTENDS
+  | STATIC
+  | NEW
+  | THIS
+  ;
 
 LET: 'let';
 TRUE: 'true';
@@ -116,6 +158,11 @@ WHILE: 'while';
 BREAK: 'break';
 CONTINUE: 'continue';
 RETURN: 'return';
+CLASS: 'class';
+EXTENDS: 'extends';
+STATIC: 'static';
+NEW: 'new';
+THIS: 'this';
 
 Identifier: [A-Za-z][A-Za-z0-9]*;
 

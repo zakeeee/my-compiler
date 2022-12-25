@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
-import Evaluator from './interpreter/evaluator'
-import { Scope } from './interpreter/scope'
+import { Interpreter } from './interpreter/interpreter'
+import { Resolver } from './interpreter/resolver'
 import { Lexer } from './lexer'
 import { Parser } from './parser/parser'
 
@@ -18,12 +18,12 @@ function main() {
   const parser = new Parser(lexer)
   const prog = parser.parse()
   if (!prog) {
-    throw new Error('has parse error')
+    throw new Error('has syntax error')
   }
-  const scope = new Scope()
-  const evaluator = new Evaluator()
-  evaluator.setScope(scope)
-  evaluator.visitProgram(prog)
+  const resolver = new Resolver()
+  const locals = resolver.run(prog)
+  const interpreter = new Interpreter(locals)
+  interpreter.run(prog)
 }
 
 // usage: tsx src/index.ts <filepath>

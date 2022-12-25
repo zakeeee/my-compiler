@@ -23,6 +23,11 @@ export enum TokenType {
   BREAK, // break
   CONTINUE, // continue
   RETURN, // return
+  CLASS, // class
+  EXTENDS, // extends
+  STATIC, // static
+  NEW, // new
+  THIS,
 
   // operators and punctuations
   ASSIGN, // =
@@ -89,6 +94,11 @@ const tokenTypeNameMap = Object.freeze({
   [TokenType.BREAK]: 'break',
   [TokenType.CONTINUE]: 'continue',
   [TokenType.RETURN]: 'return',
+  [TokenType.CLASS]: 'class',
+  [TokenType.EXTENDS]: 'extends',
+  [TokenType.STATIC]: 'static',
+  [TokenType.NEW]: 'new',
+  [TokenType.THIS]: 'this',
 
   // operators and punctuations
   [TokenType.ASSIGN]: '=',
@@ -150,6 +160,11 @@ const keywordTokenTypeMap = Object.freeze({
   break: TokenType.BREAK,
   continue: TokenType.CONTINUE,
   return: TokenType.RETURN,
+  class: TokenType.CLASS,
+  extends: TokenType.EXTENDS,
+  static: TokenType.STATIC,
+  new: TokenType.NEW,
+  this: TokenType.THIS,
 })
 
 export function isKeyword(word: string): word is keyof typeof keywordTokenTypeMap {

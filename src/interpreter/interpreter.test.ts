@@ -1,10 +1,10 @@
 import { Lexer } from 'src/lexer'
 import { Parser } from 'src/parser/parser'
 import { describe, test } from 'vitest'
-import Evaluator from './evaluator'
-import { Scope } from './scope'
+import { Interpreter } from './interpreter'
+import { Resolver } from './resolver'
 
-describe('Evaluator', () => {
+describe('Interpreter', () => {
   test('foo', () => {
     //     const input = `\
     // func gen(n) {
@@ -46,11 +46,11 @@ print(fib(20));
     const parser = new Parser(lexer)
     const prog = parser.parse()
     if (!prog) {
-      throw new Error('has parse error')
+      throw new Error('has syntax error')
     }
-    const scope = new Scope()
-    const evaluator = new Evaluator()
-    evaluator.setScope(scope)
-    evaluator.visitProgram(prog)
+    const resolver = new Resolver()
+    const locals = resolver.run(prog)
+    const interpreter = new Interpreter(locals)
+    interpreter.visitProgram(prog)
   })
 })

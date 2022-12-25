@@ -1,17 +1,12 @@
 import { inspect } from 'node:util'
-import { describe, test } from 'vitest'
+import { describe, expect, test } from 'vitest'
 import { Lexer } from '../lexer'
 import { Parser } from './parser'
 
 describe('Parser', () => {
   test('let statement', () => {
     const input = `\
-let a = 1;
-let b = "12321312";
-let c = true;
-let d = null;
-let e = (foo);
-let f = e(1, 2, bar("asdf", foo));
+a = b = c;
 `
     const lexer = new Lexer(input)
     const parser = new Parser(lexer)
@@ -52,12 +47,34 @@ let foo2 = func () {
 
   test('parse', () => {
     const input = `\
-let a = {"a": 1, "b": "foo"};
-let b = [1, 2, 3];
+func foo() {
+  print("foo");
+}
+
+let bar = func () {
+  print("bar");
+};
+
+class A {
+  foo() {
+    print("foo A");
+  }
+
+  static bar() {
+    print("bar");
+  }
+}
+
+class B extends A {
+  foo() {
+    print("foo B");
+  }
+}
 `
     const lexer = new Lexer(input)
     const parser = new Parser(lexer)
     const prog = parser.parse()
+    expect(prog).not.toBe(null)
     console.log(inspect(prog, false, null))
   })
 })

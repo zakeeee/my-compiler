@@ -120,6 +120,11 @@ describe('Lexer', () => {
       TokenType.BREAK,
       TokenType.CONTINUE,
       TokenType.RETURN,
+      TokenType.CLASS,
+      TokenType.EXTENDS,
+      TokenType.STATIC,
+      TokenType.NEW,
+      TokenType.THIS,
     ].map((token) => [token, getTokenName(token)])
     const input = expected.map((item) => item[1]).join(' ')
     const items: [TokenType, string][] = []

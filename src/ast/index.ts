@@ -1,43 +1,48 @@
 import { Token } from 'src/lexer'
 
-export interface ITreeNodeVisitor {
+export interface TreeNodeVisitor {
   visitProgram(node: Program): any
 
   visitBlockStatement(node: BlockStatement): any
   visitEmptyStatement(node: EmptyStatement): any
   visitExpressionStatement(node: ExpressionStatement): any
   visitLetStatement(node: LetStatement): any
-  visitFunctionStatement(node: FunctionStatement): any
   visitIfStatement(node: IfStatement): any
   visitForStatement(node: ForStatement): any
   visitWhileStatement(node: WhileStatement): any
   visitContinueStatement(node: ContinueStatement): any
   visitBreakStatement(node: BreakStatement): any
   visitReturnStatement(node: ReturnStatement): any
+  visitFunctionStatement(node: FunctionStatement): any
+  visitMethodStatement(node: MethodStatement): any
+  visitClassStatement(node: ClassStatement): any
 
   visitPrefixExpression(node: PrefixExpression): any
   visitInfixExpression(node: InfixExpression): any
-  visitVariableDeclaration(node: VariableDeclaration): any
+  visitAssignmentExpression(node: AssignmentExpression): any
   visitLetExpression(node: LetExpression): any
   visitCallExpression(node: CallExpression): any
   visitLiteralExpression(node: LiteralExpression): any
   visitIdentifierExpression(node: IdentifierExpression): any
   visitFunctionExpression(node: FunctionExpression): any
-  visitArrayExpression(node: ArrayExpression): any
-  visitKeyValue(node: KeyValue): any
-  visitHashExpression(node: HashExpression): any
+  visitArrayLiteralExpression(node: ArrayLiteralExpression): any
+  visitHashLiteralExpression(node: HashLiteralExpression): any
+  visitGetPropertyExpression(node: GetPropertyExpression): any
+  visitNewExpression(node: NewExpression): any
+  visitThisExpression(node: ThisExpression): any
+  visitIndexExpression(node: IndexExpression): any
 }
 
-export interface ITreeNode<V extends keyof ITreeNodeVisitor> {
+export interface TreeNode<V extends keyof TreeNodeVisitor> {
   token: Token
 
-  accept<T extends ITreeNodeVisitor>(visitor: T): ReturnType<T[V]>
+  accept<T extends TreeNodeVisitor>(visitor: T): ReturnType<T[V]>
 }
 
-export class Program implements ITreeNode<'visitProgram'> {
-  constructor(public token: Token, public body: Statement[]) {}
+export class Program implements TreeNode<'visitProgram'> {
+  constructor(public token: Token, public stmts: Statement[]) {}
 
-  accept<T extends ITreeNodeVisitor>(visitor: T): ReturnType<T['visitProgram']> {
+  accept<T extends TreeNodeVisitor>(visitor: T): ReturnType<T['visitProgram']> {
     return visitor.visitProgram(this)
   }
 }
@@ -55,52 +60,39 @@ export type Statement =
   | BreakStatement
   | ReturnStatement
 
-export class BlockStatement implements ITreeNode<'visitBlockStatement'> {
-  constructor(public token: Token, public statements: Statement[]) {}
+export class BlockStatement implements TreeNode<'visitBlockStatement'> {
+  constructor(public token: Token, public stmts: Statement[]) {}
 
-  accept<T extends ITreeNodeVisitor>(visitor: T): ReturnType<T['visitBlockStatement']> {
+  accept<T extends TreeNodeVisitor>(visitor: T): ReturnType<T['visitBlockStatement']> {
     return visitor.visitBlockStatement(this)
   }
 }
 
-export class EmptyStatement implements ITreeNode<'visitEmptyStatement'> {
+export class EmptyStatement implements TreeNode<'visitEmptyStatement'> {
   constructor(public token: Token) {}
 
-  accept<T extends ITreeNodeVisitor>(visitor: T): ReturnType<T['visitEmptyStatement']> {
+  accept<T extends TreeNodeVisitor>(visitor: T): ReturnType<T['visitEmptyStatement']> {
     return visitor.visitEmptyStatement(this)
   }
 }
 
-export class ExpressionStatement implements ITreeNode<'visitExpressionStatement'> {
-  constructor(public token: Token, public expression: Expression) {}
+export class ExpressionStatement implements TreeNode<'visitExpressionStatement'> {
+  constructor(public token: Token, public expr: Expression) {}
 
-  accept<T extends ITreeNodeVisitor>(visitor: T): ReturnType<T['visitExpressionStatement']> {
+  accept<T extends TreeNodeVisitor>(visitor: T): ReturnType<T['visitExpressionStatement']> {
     return visitor.visitExpressionStatement(this)
   }
 }
 
-export class LetStatement implements ITreeNode<'visitLetStatement'> {
-  constructor(public token: Token, public expression: LetExpression) {}
+export class LetStatement implements TreeNode<'visitLetStatement'> {
+  constructor(public token: Token, public expr: LetExpression) {}
 
-  accept<T extends ITreeNodeVisitor>(visitor: T): ReturnType<T['visitLetStatement']> {
+  accept<T extends TreeNodeVisitor>(visitor: T): ReturnType<T['visitLetStatement']> {
     return visitor.visitLetStatement(this)
   }
 }
 
-export class FunctionStatement implements ITreeNode<'visitFunctionStatement'> {
-  constructor(
-    public token: Token,
-    public identifier: Token,
-    public parameters: Token[],
-    public body: BlockStatement
-  ) {}
-
-  accept<T extends ITreeNodeVisitor>(visitor: T): ReturnType<T['visitFunctionStatement']> {
-    return visitor.visitFunctionStatement(this)
-  }
-}
-
-export class IfStatement implements ITreeNode<'visitIfStatement'> {
+export class IfStatement implements TreeNode<'visitIfStatement'> {
   constructor(
     public token: Token,
     public condition: Expression,
@@ -108,12 +100,12 @@ export class IfStatement implements ITreeNode<'visitIfStatement'> {
     public alternative: Statement | null = null
   ) {}
 
-  accept<T extends ITreeNodeVisitor>(visitor: T): ReturnType<T['visitIfStatement']> {
+  accept<T extends TreeNodeVisitor>(visitor: T): ReturnType<T['visitIfStatement']> {
     return visitor.visitIfStatement(this)
   }
 }
 
-export class ForStatement implements ITreeNode<'visitForStatement'> {
+export class ForStatement implements TreeNode<'visitForStatement'> {
   constructor(
     public token: Token,
     public body: Statement,
@@ -122,63 +114,107 @@ export class ForStatement implements ITreeNode<'visitForStatement'> {
     public afterEach: Expression | null = null
   ) {}
 
-  accept<T extends ITreeNodeVisitor>(visitor: T): ReturnType<T['visitForStatement']> {
+  accept<T extends TreeNodeVisitor>(visitor: T): ReturnType<T['visitForStatement']> {
     return visitor.visitForStatement(this)
   }
 }
 
-export class WhileStatement implements ITreeNode<'visitWhileStatement'> {
+export class WhileStatement implements TreeNode<'visitWhileStatement'> {
   constructor(public token: Token, public condition: Expression, public body: Statement) {}
 
-  accept<T extends ITreeNodeVisitor>(visitor: T): ReturnType<T['visitWhileStatement']> {
+  accept<T extends TreeNodeVisitor>(visitor: T): ReturnType<T['visitWhileStatement']> {
     return visitor.visitWhileStatement(this)
   }
 }
 
-export class ContinueStatement implements ITreeNode<'visitContinueStatement'> {
+export class ContinueStatement implements TreeNode<'visitContinueStatement'> {
   constructor(public token: Token) {}
 
-  accept<T extends ITreeNodeVisitor>(visitor: T): ReturnType<T['visitContinueStatement']> {
+  accept<T extends TreeNodeVisitor>(visitor: T): ReturnType<T['visitContinueStatement']> {
     return visitor.visitContinueStatement(this)
   }
 }
 
-export class BreakStatement implements ITreeNode<'visitBreakStatement'> {
+export class BreakStatement implements TreeNode<'visitBreakStatement'> {
   constructor(public token: Token) {}
 
-  accept<T extends ITreeNodeVisitor>(visitor: T): ReturnType<T['visitBreakStatement']> {
+  accept<T extends TreeNodeVisitor>(visitor: T): ReturnType<T['visitBreakStatement']> {
     return visitor.visitBreakStatement(this)
   }
 }
 
-export class ReturnStatement implements ITreeNode<'visitReturnStatement'> {
-  constructor(public token: Token, public returnValue: Expression | null = null) {}
+export class ReturnStatement implements TreeNode<'visitReturnStatement'> {
+  constructor(public token: Token, public value: Expression | null = null) {}
 
-  accept<T extends ITreeNodeVisitor>(visitor: T): ReturnType<T['visitReturnStatement']> {
+  accept<T extends TreeNodeVisitor>(visitor: T): ReturnType<T['visitReturnStatement']> {
     return visitor.visitReturnStatement(this)
+  }
+}
+
+export class FunctionStatement implements TreeNode<'visitFunctionStatement'> {
+  constructor(
+    public token: Token,
+    public name: Token,
+    public params: Token[],
+    public body: BlockStatement
+  ) {}
+
+  accept<T extends TreeNodeVisitor>(visitor: T): ReturnType<T['visitFunctionStatement']> {
+    return visitor.visitFunctionStatement(this)
+  }
+}
+
+export class MethodStatement implements TreeNode<'visitMethodStatement'> {
+  constructor(
+    public token: Token,
+    public name: Token,
+    public params: Token[],
+    public body: BlockStatement,
+    public isStatic: boolean
+  ) {}
+
+  accept<T extends TreeNodeVisitor>(visitor: T): ReturnType<T['visitMethodStatement']> {
+    return visitor.visitMethodStatement(this)
+  }
+}
+
+export class ClassStatement implements TreeNode<'visitClassStatement'> {
+  constructor(
+    public token: Token,
+    public name: Token,
+    public superClass: Token | null,
+    public methods: MethodStatement[]
+  ) {}
+
+  accept<T extends TreeNodeVisitor>(visitor: T): ReturnType<T['visitClassStatement']> {
+    return visitor.visitClassStatement(this)
   }
 }
 
 export type Expression =
   | PrefixExpression
   | InfixExpression
+  | AssignmentExpression
   | LetExpression
   | CallExpression
   | LiteralExpression
   | IdentifierExpression
   | FunctionExpression
-  | ArrayExpression
-  | HashExpression
+  | ArrayLiteralExpression
+  | HashLiteralExpression
+  | GetPropertyExpression
+  | NewExpression
+  | ThisExpression
 
-export class PrefixExpression implements ITreeNode<'visitPrefixExpression'> {
+export class PrefixExpression implements TreeNode<'visitPrefixExpression'> {
   constructor(public token: Token, public operator: Token, public operand: Expression) {}
 
-  accept<T extends ITreeNodeVisitor>(visitor: T): ReturnType<T['visitPrefixExpression']> {
+  accept<T extends TreeNodeVisitor>(visitor: T): ReturnType<T['visitPrefixExpression']> {
     return visitor.visitPrefixExpression(this)
   }
 }
 
-export class InfixExpression implements ITreeNode<'visitInfixExpression'> {
+export class InfixExpression implements TreeNode<'visitInfixExpression'> {
   constructor(
     public token: Token,
     public operator: Token,
@@ -186,83 +222,111 @@ export class InfixExpression implements ITreeNode<'visitInfixExpression'> {
     public right: Expression
   ) {}
 
-  accept<T extends ITreeNodeVisitor>(visitor: T): ReturnType<T['visitInfixExpression']> {
+  accept<T extends TreeNodeVisitor>(visitor: T): ReturnType<T['visitInfixExpression']> {
     return visitor.visitInfixExpression(this)
   }
 }
 
-export class VariableDeclaration implements ITreeNode<'visitVariableDeclaration'> {
-  constructor(public token: Token, public identifier: Token, public value: Expression | null) {}
+export class AssignmentExpression implements TreeNode<'visitAssignmentExpression'> {
+  constructor(
+    public token: Token,
+    public operator: Token,
+    public left: IdentifierExpression | GetPropertyExpression | IndexExpression,
+    public right: Expression
+  ) {}
 
-  accept<T extends ITreeNodeVisitor>(visitor: T): ReturnType<T['visitVariableDeclaration']> {
-    return visitor.visitVariableDeclaration(this)
+  accept<T extends TreeNodeVisitor>(visitor: T): ReturnType<T['visitAssignmentExpression']> {
+    return visitor.visitAssignmentExpression(this)
   }
 }
 
-export class LetExpression implements ITreeNode<'visitLetExpression'> {
-  constructor(public token: Token, public variableDeclarationSequence: VariableDeclaration[]) {}
+export class LetExpression implements TreeNode<'visitLetExpression'> {
+  constructor(
+    public token: Token,
+    public varDecls: { name: Token; initializer: Expression | null }[]
+  ) {}
 
-  accept<T extends ITreeNodeVisitor>(visitor: T): ReturnType<T['visitLetExpression']> {
+  accept<T extends TreeNodeVisitor>(visitor: T): ReturnType<T['visitLetExpression']> {
     return visitor.visitLetExpression(this)
   }
 }
 
-export class CallExpression implements ITreeNode<'visitCallExpression'> {
-  constructor(public token: Token, public callable: Expression, public args: Expression[]) {}
+export class CallExpression implements TreeNode<'visitCallExpression'> {
+  constructor(public token: Token, public callee: Expression, public args: Expression[]) {}
 
-  accept<T extends ITreeNodeVisitor>(visitor: T): ReturnType<T['visitCallExpression']> {
+  accept<T extends TreeNodeVisitor>(visitor: T): ReturnType<T['visitCallExpression']> {
     return visitor.visitCallExpression(this)
   }
 }
 
-export class LiteralExpression implements ITreeNode<'visitLiteralExpression'> {
-  constructor(public token: Token, public value: unknown) {}
+export class LiteralExpression implements TreeNode<'visitLiteralExpression'> {
+  constructor(public token: Token, public literal: Token, public value: unknown) {}
 
-  accept<T extends ITreeNodeVisitor>(visitor: T): ReturnType<T['visitLiteralExpression']> {
+  accept<T extends TreeNodeVisitor>(visitor: T): ReturnType<T['visitLiteralExpression']> {
     return visitor.visitLiteralExpression(this)
   }
 }
 
-export class IdentifierExpression implements ITreeNode<'visitIdentifierExpression'> {
-  constructor(public token: Token) {}
+export class IdentifierExpression implements TreeNode<'visitIdentifierExpression'> {
+  constructor(public token: Token, public name: Token) {}
 
-  accept<T extends ITreeNodeVisitor>(visitor: T): ReturnType<T['visitIdentifierExpression']> {
+  accept<T extends TreeNodeVisitor>(visitor: T): ReturnType<T['visitIdentifierExpression']> {
     return visitor.visitIdentifierExpression(this)
   }
 }
 
-export class FunctionExpression implements ITreeNode<'visitFunctionExpression'> {
-  constructor(
-    public token: Token,
-    public params: IdentifierExpression[],
-    public body: BlockStatement
-  ) {}
+export class FunctionExpression implements TreeNode<'visitFunctionExpression'> {
+  constructor(public token: Token, public params: Token[], public body: BlockStatement) {}
 
-  accept<T extends ITreeNodeVisitor>(visitor: T): ReturnType<T['visitFunctionExpression']> {
+  accept<T extends TreeNodeVisitor>(visitor: T): ReturnType<T['visitFunctionExpression']> {
     return visitor.visitFunctionExpression(this)
   }
 }
 
-export class ArrayExpression implements ITreeNode<'visitArrayExpression'> {
+export class ArrayLiteralExpression implements TreeNode<'visitArrayLiteralExpression'> {
   constructor(public token: Token, public elements: Expression[]) {}
 
-  accept<T extends ITreeNodeVisitor>(visitor: T): ReturnType<T['visitArrayExpression']> {
-    return visitor.visitArrayExpression(this)
+  accept<T extends TreeNodeVisitor>(visitor: T): ReturnType<T['visitArrayLiteralExpression']> {
+    return visitor.visitArrayLiteralExpression(this)
   }
 }
 
-export class KeyValue implements ITreeNode<'visitKeyValue'> {
-  constructor(public token: Token, public key: LiteralExpression, public value: Expression) {}
+export class HashLiteralExpression implements TreeNode<'visitHashLiteralExpression'> {
+  constructor(public token: Token, public entries: { key: string; value: Expression }[]) {}
 
-  accept<T extends ITreeNodeVisitor>(visitor: T): ReturnType<T['visitKeyValue']> {
-    return visitor.visitKeyValue(this)
+  accept<T extends TreeNodeVisitor>(visitor: T): ReturnType<T['visitHashLiteralExpression']> {
+    return visitor.visitHashLiteralExpression(this)
   }
 }
 
-export class HashExpression implements ITreeNode<'visitHashExpression'> {
-  constructor(public token: Token, public keyValueSequence: KeyValue[]) {}
+export class GetPropertyExpression implements TreeNode<'visitGetPropertyExpression'> {
+  constructor(public token: Token, public object: Expression, public prop: Token) {}
 
-  accept<T extends ITreeNodeVisitor>(visitor: T): ReturnType<T['visitHashExpression']> {
-    return visitor.visitHashExpression(this)
+  accept<T extends TreeNodeVisitor>(visitor: T): ReturnType<T['visitGetPropertyExpression']> {
+    return visitor.visitGetPropertyExpression(this)
+  }
+}
+
+export class NewExpression implements TreeNode<'visitNewExpression'> {
+  constructor(public token: Token, public cls: Token, public args: Expression[]) {}
+
+  accept<T extends TreeNodeVisitor>(visitor: T): ReturnType<T['visitNewExpression']> {
+    return visitor.visitNewExpression(this)
+  }
+}
+
+export class ThisExpression implements TreeNode<'visitThisExpression'> {
+  constructor(public token: Token) {}
+
+  accept<T extends TreeNodeVisitor>(visitor: T): ReturnType<T['visitThisExpression']> {
+    return visitor.visitThisExpression(this)
+  }
+}
+
+export class IndexExpression implements TreeNode<'visitIndexExpression'> {
+  constructor(public token: Token, public indexable: Expression, public index: Expression) {}
+
+  accept<T extends TreeNodeVisitor>(visitor: T): ReturnType<T['visitIndexExpression']> {
+    return visitor.visitIndexExpression(this)
   }
 }
