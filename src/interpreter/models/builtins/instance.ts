@@ -1,4 +1,5 @@
 import type { PopClass } from './class'
+import { PopFunction } from './function'
 import { PopObject } from './object'
 
 export class PopInstance extends PopObject {
@@ -29,6 +30,10 @@ export class PopInstance extends PopObject {
   }
 
   toString(): string {
+    const toString = this.getProperty('toString')
+    if (toString instanceof PopFunction) {
+      return toString.call([]).toString()
+    }
     return `<Object>`
   }
 

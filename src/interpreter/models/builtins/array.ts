@@ -50,6 +50,9 @@ export class PopArray extends PopObject {
   }
 
   toString(): string {
-    return this.elements.toString()
+    return `[${this.elements
+      .slice(0, 10)
+      .map((el) => el.toString())
+      .join(', ')}${this.elements.length > 10 ? '...' : ''}]`
   }
 }

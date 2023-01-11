@@ -133,7 +133,7 @@ export class ArrayClass extends PopClass {
       new PopFunction(this.env, {
         name: 'toString',
         params: [],
-        func: () => {
+        func: (env) => {
           const thisInstance = env.getValue<ArrayInstance>('this')!
           return new PopString(thisInstance.array.toString())
         },
