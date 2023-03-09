@@ -1,21 +1,21 @@
-import { ModelType } from '../types'
+import { ModelType } from '../types';
 
 export class PopObject {
-  protected type: ModelType = ModelType.OBJECT
+  protected type: ModelType = ModelType.OBJECT;
 
   getType() {
-    return this.type
+    return this.type;
   }
 
   equals(other: PopObject): boolean {
-    return this === other
+    return this === other;
   }
 
   toBoolean(): boolean {
-    return true
+    return true;
   }
 
   toString(): string {
-    return `<Object>`
+    return `<Object>`;
   }
 }

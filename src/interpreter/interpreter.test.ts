@@ -1,8 +1,8 @@
-import { Lexer } from 'src/lexer'
-import { Parser } from 'src/parser/parser'
-import { describe, test } from 'vitest'
-import { Interpreter } from './interpreter'
-import { Resolver } from './resolver'
+import { Lexer } from 'src/lexer';
+import { Parser } from 'src/parser/parser';
+import { describe, test } from 'vitest';
+import { Interpreter } from './interpreter';
+import { Resolver } from './resolver';
 
 describe('Interpreter', () => {
   test('foo', () => {
@@ -41,16 +41,16 @@ func fib(n) {
   return b;
 }
 print(fib(20));
-`
-    const lexer = new Lexer(input)
-    const parser = new Parser(lexer)
-    const prog = parser.parse()
+`;
+    const lexer = new Lexer(input);
+    const parser = new Parser(lexer);
+    const prog = parser.parse();
     if (!prog) {
-      throw new Error('has syntax error')
+      throw new Error('has syntax error');
     }
-    const resolver = new Resolver()
-    const locals = resolver.run(prog)
-    const interpreter = new Interpreter(locals)
-    interpreter.visitProgram(prog)
-  })
-})
+    const resolver = new Resolver();
+    const locals = resolver.run(prog);
+    const interpreter = new Interpreter(locals);
+    interpreter.visitProgram(prog);
+  });
+});

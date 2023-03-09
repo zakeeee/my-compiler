@@ -1,49 +1,74 @@
-import { Token } from 'src/lexer'
+import { Token } from 'src/lexer';
 
 export interface TreeNodeVisitor {
-  visitProgram(node: Program): any
+  visitProgram(node: Program): any;
 
-  visitBlockStatement(node: BlockStatement): any
-  visitEmptyStatement(node: EmptyStatement): any
-  visitExpressionStatement(node: ExpressionStatement): any
-  visitLetStatement(node: LetStatement): any
-  visitIfStatement(node: IfStatement): any
-  visitForStatement(node: ForStatement): any
-  visitWhileStatement(node: WhileStatement): any
-  visitContinueStatement(node: ContinueStatement): any
-  visitBreakStatement(node: BreakStatement): any
-  visitReturnStatement(node: ReturnStatement): any
-  visitFunctionStatement(node: FunctionStatement): any
-  visitMethodStatement(node: MethodStatement): any
-  visitClassStatement(node: ClassStatement): any
+  visitBlockStatement(node: BlockStatement): any;
 
-  visitPrefixExpression(node: PrefixExpression): any
-  visitInfixExpression(node: InfixExpression): any
-  visitAssignmentExpression(node: AssignmentExpression): any
-  visitLetExpression(node: LetExpression): any
-  visitCallExpression(node: CallExpression): any
-  visitLiteralExpression(node: LiteralExpression): any
-  visitIdentifierExpression(node: IdentifierExpression): any
-  visitFunctionExpression(node: FunctionExpression): any
-  visitArrayLiteralExpression(node: ArrayLiteralExpression): any
-  visitHashLiteralExpression(node: HashLiteralExpression): any
-  visitGetPropertyExpression(node: GetPropertyExpression): any
-  visitNewExpression(node: NewExpression): any
-  visitThisExpression(node: ThisExpression): any
-  visitIndexExpression(node: IndexExpression): any
+  visitEmptyStatement(node: EmptyStatement): any;
+
+  visitExpressionStatement(node: ExpressionStatement): any;
+
+  visitLetStatement(node: LetStatement): any;
+
+  visitIfStatement(node: IfStatement): any;
+
+  visitForStatement(node: ForStatement): any;
+
+  visitWhileStatement(node: WhileStatement): any;
+
+  visitContinueStatement(node: ContinueStatement): any;
+
+  visitBreakStatement(node: BreakStatement): any;
+
+  visitReturnStatement(node: ReturnStatement): any;
+
+  visitFunctionStatement(node: FunctionStatement): any;
+
+  visitMethodStatement(node: MethodStatement): any;
+
+  visitClassStatement(node: ClassStatement): any;
+
+  visitPrefixExpression(node: PrefixExpression): any;
+
+  visitInfixExpression(node: InfixExpression): any;
+
+  visitAssignmentExpression(node: AssignmentExpression): any;
+
+  visitLetExpression(node: LetExpression): any;
+
+  visitCallExpression(node: CallExpression): any;
+
+  visitLiteralExpression(node: LiteralExpression): any;
+
+  visitIdentifierExpression(node: IdentifierExpression): any;
+
+  visitFunctionExpression(node: FunctionExpression): any;
+
+  visitArrayLiteralExpression(node: ArrayLiteralExpression): any;
+
+  visitHashLiteralExpression(node: HashLiteralExpression): any;
+
+  visitGetPropertyExpression(node: GetPropertyExpression): any;
+
+  visitNewExpression(node: NewExpression): any;
+
+  visitThisExpression(node: ThisExpression): any;
+
+  visitIndexExpression(node: IndexExpression): any;
 }
 
 export interface TreeNode<V extends keyof TreeNodeVisitor> {
-  token: Token
+  token: Token;
 
-  accept<T extends TreeNodeVisitor>(visitor: T): ReturnType<T[V]>
+  accept<T extends TreeNodeVisitor>(visitor: T): ReturnType<T[V]>;
 }
 
 export class Program implements TreeNode<'visitProgram'> {
   constructor(public token: Token, public stmts: Statement[]) {}
 
   accept<T extends TreeNodeVisitor>(visitor: T): ReturnType<T['visitProgram']> {
-    return visitor.visitProgram(this)
+    return visitor.visitProgram(this);
   }
 }
 
@@ -58,13 +83,13 @@ export type Statement =
   | WhileStatement
   | ContinueStatement
   | BreakStatement
-  | ReturnStatement
+  | ReturnStatement;
 
 export class BlockStatement implements TreeNode<'visitBlockStatement'> {
   constructor(public token: Token, public stmts: Statement[]) {}
 
   accept<T extends TreeNodeVisitor>(visitor: T): ReturnType<T['visitBlockStatement']> {
-    return visitor.visitBlockStatement(this)
+    return visitor.visitBlockStatement(this);
   }
 }
 
@@ -72,7 +97,7 @@ export class EmptyStatement implements TreeNode<'visitEmptyStatement'> {
   constructor(public token: Token) {}
 
   accept<T extends TreeNodeVisitor>(visitor: T): ReturnType<T['visitEmptyStatement']> {
-    return visitor.visitEmptyStatement(this)
+    return visitor.visitEmptyStatement(this);
   }
 }
 
@@ -80,7 +105,7 @@ export class ExpressionStatement implements TreeNode<'visitExpressionStatement'>
   constructor(public token: Token, public expr: Expression) {}
 
   accept<T extends TreeNodeVisitor>(visitor: T): ReturnType<T['visitExpressionStatement']> {
-    return visitor.visitExpressionStatement(this)
+    return visitor.visitExpressionStatement(this);
   }
 }
 
@@ -88,7 +113,7 @@ export class LetStatement implements TreeNode<'visitLetStatement'> {
   constructor(public token: Token, public expr: LetExpression) {}
 
   accept<T extends TreeNodeVisitor>(visitor: T): ReturnType<T['visitLetStatement']> {
-    return visitor.visitLetStatement(this)
+    return visitor.visitLetStatement(this);
   }
 }
 
@@ -101,7 +126,7 @@ export class IfStatement implements TreeNode<'visitIfStatement'> {
   ) {}
 
   accept<T extends TreeNodeVisitor>(visitor: T): ReturnType<T['visitIfStatement']> {
-    return visitor.visitIfStatement(this)
+    return visitor.visitIfStatement(this);
   }
 }
 
@@ -115,7 +140,7 @@ export class ForStatement implements TreeNode<'visitForStatement'> {
   ) {}
 
   accept<T extends TreeNodeVisitor>(visitor: T): ReturnType<T['visitForStatement']> {
-    return visitor.visitForStatement(this)
+    return visitor.visitForStatement(this);
   }
 }
 
@@ -123,7 +148,7 @@ export class WhileStatement implements TreeNode<'visitWhileStatement'> {
   constructor(public token: Token, public condition: Expression, public body: Statement) {}
 
   accept<T extends TreeNodeVisitor>(visitor: T): ReturnType<T['visitWhileStatement']> {
-    return visitor.visitWhileStatement(this)
+    return visitor.visitWhileStatement(this);
   }
 }
 
@@ -131,7 +156,7 @@ export class ContinueStatement implements TreeNode<'visitContinueStatement'> {
   constructor(public token: Token) {}
 
   accept<T extends TreeNodeVisitor>(visitor: T): ReturnType<T['visitContinueStatement']> {
-    return visitor.visitContinueStatement(this)
+    return visitor.visitContinueStatement(this);
   }
 }
 
@@ -139,7 +164,7 @@ export class BreakStatement implements TreeNode<'visitBreakStatement'> {
   constructor(public token: Token) {}
 
   accept<T extends TreeNodeVisitor>(visitor: T): ReturnType<T['visitBreakStatement']> {
-    return visitor.visitBreakStatement(this)
+    return visitor.visitBreakStatement(this);
   }
 }
 
@@ -147,7 +172,7 @@ export class ReturnStatement implements TreeNode<'visitReturnStatement'> {
   constructor(public token: Token, public value: Expression | null = null) {}
 
   accept<T extends TreeNodeVisitor>(visitor: T): ReturnType<T['visitReturnStatement']> {
-    return visitor.visitReturnStatement(this)
+    return visitor.visitReturnStatement(this);
   }
 }
 
@@ -160,7 +185,7 @@ export class FunctionStatement implements TreeNode<'visitFunctionStatement'> {
   ) {}
 
   accept<T extends TreeNodeVisitor>(visitor: T): ReturnType<T['visitFunctionStatement']> {
-    return visitor.visitFunctionStatement(this)
+    return visitor.visitFunctionStatement(this);
   }
 }
 
@@ -174,7 +199,7 @@ export class MethodStatement implements TreeNode<'visitMethodStatement'> {
   ) {}
 
   accept<T extends TreeNodeVisitor>(visitor: T): ReturnType<T['visitMethodStatement']> {
-    return visitor.visitMethodStatement(this)
+    return visitor.visitMethodStatement(this);
   }
 }
 
@@ -187,7 +212,7 @@ export class ClassStatement implements TreeNode<'visitClassStatement'> {
   ) {}
 
   accept<T extends TreeNodeVisitor>(visitor: T): ReturnType<T['visitClassStatement']> {
-    return visitor.visitClassStatement(this)
+    return visitor.visitClassStatement(this);
   }
 }
 
@@ -204,13 +229,13 @@ export type Expression =
   | HashLiteralExpression
   | GetPropertyExpression
   | NewExpression
-  | ThisExpression
+  | ThisExpression;
 
 export class PrefixExpression implements TreeNode<'visitPrefixExpression'> {
   constructor(public token: Token, public operator: Token, public operand: Expression) {}
 
   accept<T extends TreeNodeVisitor>(visitor: T): ReturnType<T['visitPrefixExpression']> {
-    return visitor.visitPrefixExpression(this)
+    return visitor.visitPrefixExpression(this);
   }
 }
 
@@ -223,7 +248,7 @@ export class InfixExpression implements TreeNode<'visitInfixExpression'> {
   ) {}
 
   accept<T extends TreeNodeVisitor>(visitor: T): ReturnType<T['visitInfixExpression']> {
-    return visitor.visitInfixExpression(this)
+    return visitor.visitInfixExpression(this);
   }
 }
 
@@ -236,7 +261,7 @@ export class AssignmentExpression implements TreeNode<'visitAssignmentExpression
   ) {}
 
   accept<T extends TreeNodeVisitor>(visitor: T): ReturnType<T['visitAssignmentExpression']> {
-    return visitor.visitAssignmentExpression(this)
+    return visitor.visitAssignmentExpression(this);
   }
 }
 
@@ -247,7 +272,7 @@ export class LetExpression implements TreeNode<'visitLetExpression'> {
   ) {}
 
   accept<T extends TreeNodeVisitor>(visitor: T): ReturnType<T['visitLetExpression']> {
-    return visitor.visitLetExpression(this)
+    return visitor.visitLetExpression(this);
   }
 }
 
@@ -255,7 +280,7 @@ export class CallExpression implements TreeNode<'visitCallExpression'> {
   constructor(public token: Token, public callee: Expression, public args: Expression[]) {}
 
   accept<T extends TreeNodeVisitor>(visitor: T): ReturnType<T['visitCallExpression']> {
-    return visitor.visitCallExpression(this)
+    return visitor.visitCallExpression(this);
   }
 }
 
@@ -263,7 +288,7 @@ export class LiteralExpression implements TreeNode<'visitLiteralExpression'> {
   constructor(public token: Token, public literal: Token, public value: unknown) {}
 
   accept<T extends TreeNodeVisitor>(visitor: T): ReturnType<T['visitLiteralExpression']> {
-    return visitor.visitLiteralExpression(this)
+    return visitor.visitLiteralExpression(this);
   }
 }
 
@@ -271,7 +296,7 @@ export class IdentifierExpression implements TreeNode<'visitIdentifierExpression
   constructor(public token: Token, public name: Token) {}
 
   accept<T extends TreeNodeVisitor>(visitor: T): ReturnType<T['visitIdentifierExpression']> {
-    return visitor.visitIdentifierExpression(this)
+    return visitor.visitIdentifierExpression(this);
   }
 }
 
@@ -279,7 +304,7 @@ export class FunctionExpression implements TreeNode<'visitFunctionExpression'> {
   constructor(public token: Token, public params: Token[], public body: BlockStatement) {}
 
   accept<T extends TreeNodeVisitor>(visitor: T): ReturnType<T['visitFunctionExpression']> {
-    return visitor.visitFunctionExpression(this)
+    return visitor.visitFunctionExpression(this);
   }
 }
 
@@ -287,7 +312,7 @@ export class ArrayLiteralExpression implements TreeNode<'visitArrayLiteralExpres
   constructor(public token: Token, public elements: Expression[]) {}
 
   accept<T extends TreeNodeVisitor>(visitor: T): ReturnType<T['visitArrayLiteralExpression']> {
-    return visitor.visitArrayLiteralExpression(this)
+    return visitor.visitArrayLiteralExpression(this);
   }
 }
 
@@ -295,7 +320,7 @@ export class HashLiteralExpression implements TreeNode<'visitHashLiteralExpressi
   constructor(public token: Token, public entries: { key: string; value: Expression }[]) {}
 
   accept<T extends TreeNodeVisitor>(visitor: T): ReturnType<T['visitHashLiteralExpression']> {
-    return visitor.visitHashLiteralExpression(this)
+    return visitor.visitHashLiteralExpression(this);
   }
 }
 
@@ -303,7 +328,7 @@ export class GetPropertyExpression implements TreeNode<'visitGetPropertyExpressi
   constructor(public token: Token, public object: Expression, public prop: Token) {}
 
   accept<T extends TreeNodeVisitor>(visitor: T): ReturnType<T['visitGetPropertyExpression']> {
-    return visitor.visitGetPropertyExpression(this)
+    return visitor.visitGetPropertyExpression(this);
   }
 }
 
@@ -311,7 +336,7 @@ export class NewExpression implements TreeNode<'visitNewExpression'> {
   constructor(public token: Token, public cls: Token, public args: Expression[]) {}
 
   accept<T extends TreeNodeVisitor>(visitor: T): ReturnType<T['visitNewExpression']> {
-    return visitor.visitNewExpression(this)
+    return visitor.visitNewExpression(this);
   }
 }
 
@@ -319,7 +344,7 @@ export class ThisExpression implements TreeNode<'visitThisExpression'> {
   constructor(public token: Token) {}
 
   accept<T extends TreeNodeVisitor>(visitor: T): ReturnType<T['visitThisExpression']> {
-    return visitor.visitThisExpression(this)
+    return visitor.visitThisExpression(this);
   }
 }
 
@@ -327,6 +352,6 @@ export class IndexExpression implements TreeNode<'visitIndexExpression'> {
   constructor(public token: Token, public indexable: Expression, public index: Expression) {}
 
   accept<T extends TreeNodeVisitor>(visitor: T): ReturnType<T['visitIndexExpression']> {
-    return visitor.visitIndexExpression(this)
+    return visitor.visitIndexExpression(this);
   }
 }

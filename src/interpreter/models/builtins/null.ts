@@ -1,19 +1,19 @@
-import { ModelType } from '../types'
-import { PopObject } from './object'
+import { ModelType } from '../types';
+import { PopObject } from './object';
 
 export class PopNull extends PopObject {
   constructor() {
-    super()
-    this.type = ModelType.NULL
+    super();
+    this.type = ModelType.NULL;
   }
 
   toBoolean(): boolean {
-    return false
+    return false;
   }
 
   toString(): string {
-    return 'null'
+    return 'null';
   }
 }
 
-export const NULL = new PopNull()
+export const NULL = new PopNull();

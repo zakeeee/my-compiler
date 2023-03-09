@@ -1,7 +1,7 @@
-import { IPosition } from 'src/types'
-import { describe, expect, test } from 'vitest'
-import Lexer from './lexer'
-import { getTokenName, Token, TokenType } from './token'
+import { IPosition } from 'src/types';
+import { describe, expect, test } from 'vitest';
+import Lexer from './lexer';
+import { getTokenName, Token, TokenType } from './token';
 
 describe('Lexer', () => {
   test('operators and punctuations', () => {
@@ -45,19 +45,19 @@ describe('Lexer', () => {
       TokenType.BIT_NOT,
       TokenType.LOGIC_AND,
       TokenType.LOGIC_OR,
-    ].map((token) => [token, getTokenName(token)])
-    const input = expected.map((item) => item[1]).join(' ')
-    const items: [TokenType, string][] = []
+    ].map((token) => [token, getTokenName(token)]);
+    const input = expected.map((item) => item[1]).join(' ');
+    const items: [TokenType, string][] = [];
 
-    const lexer = new Lexer(input)
-    let token = lexer.nextToken()
+    const lexer = new Lexer(input);
+    let token = lexer.nextToken();
     while (token.type !== TokenType.EOF) {
-      items.push([token.type, token.lexeme])
-      token = lexer.nextToken()
+      items.push([token.type, token.lexeme]);
+      token = lexer.nextToken();
     }
 
-    expect(items).toEqual(expected)
-  })
+    expect(items).toEqual(expected);
+  });
 
   test('operators and punctuations', () => {
     const expected: [TokenType, string][] = [
@@ -92,19 +92,19 @@ describe('Lexer', () => {
       TokenType.BIT_NOT,
       TokenType.LOGIC_AND,
       TokenType.LOGIC_OR,
-    ].map((token) => [token, getTokenName(token)])
-    const input = expected.map((item) => item[1]).join(' ')
-    const items: [TokenType, string][] = []
+    ].map((token) => [token, getTokenName(token)]);
+    const input = expected.map((item) => item[1]).join(' ');
+    const items: [TokenType, string][] = [];
 
-    const lexer = new Lexer(input)
-    let token = lexer.nextToken()
+    const lexer = new Lexer(input);
+    let token = lexer.nextToken();
     while (token.type !== TokenType.EOF) {
-      items.push([token.type, token.lexeme])
-      token = lexer.nextToken()
+      items.push([token.type, token.lexeme]);
+      token = lexer.nextToken();
     }
 
-    expect(items).toEqual(expected)
-  })
+    expect(items).toEqual(expected);
+  });
 
   test('keywords', () => {
     const expected = [
@@ -125,19 +125,19 @@ describe('Lexer', () => {
       TokenType.STATIC,
       TokenType.NEW,
       TokenType.THIS,
-    ].map((token) => [token, getTokenName(token)])
-    const input = expected.map((item) => item[1]).join(' ')
-    const items: [TokenType, string][] = []
+    ].map((token) => [token, getTokenName(token)]);
+    const input = expected.map((item) => item[1]).join(' ');
+    const items: [TokenType, string][] = [];
 
-    const lexer = new Lexer(input)
-    let token = lexer.nextToken()
+    const lexer = new Lexer(input);
+    let token = lexer.nextToken();
     while (token.type !== TokenType.EOF) {
-      items.push([token.type, token.lexeme])
-      token = lexer.nextToken()
+      items.push([token.type, token.lexeme]);
+      token = lexer.nextToken();
     }
 
-    expect(items).toEqual(expected)
-  })
+    expect(items).toEqual(expected);
+  });
 
   test('identifiers', () => {
     const expected = [
@@ -145,29 +145,29 @@ describe('Lexer', () => {
       [TokenType.IDENTIFIER, 'Bar'],
       [TokenType.IDENTIFIER, 'a0'],
       [TokenType.IDENTIFIER, 'b123'],
-    ]
-    const input = expected.map((item) => item[1]).join(' ')
-    const items: [TokenType, string][] = []
+    ];
+    const input = expected.map((item) => item[1]).join(' ');
+    const items: [TokenType, string][] = [];
 
-    const lexer = new Lexer(input)
-    let token = lexer.nextToken()
+    const lexer = new Lexer(input);
+    let token = lexer.nextToken();
     while (token.type !== TokenType.EOF) {
-      items.push([token.type, token.lexeme])
-      token = lexer.nextToken()
+      items.push([token.type, token.lexeme]);
+      token = lexer.nextToken();
     }
 
-    expect(items).toEqual(expected)
-  })
+    expect(items).toEqual(expected);
+  });
 
   test('number literals', () => {
-    const input = '0 -1 3.14 3e-3 0.1e2 +1.2e+5'
-    const items: [TokenType, string][] = []
+    const input = '0 -1 3.14 3e-3 0.1e2 +1.2e+5';
+    const items: [TokenType, string][] = [];
 
-    const lexer = new Lexer(input)
-    let token = lexer.nextToken()
+    const lexer = new Lexer(input);
+    let token = lexer.nextToken();
     while (token.type !== TokenType.EOF) {
-      items.push([token.type, token.lexeme])
-      token = lexer.nextToken()
+      items.push([token.type, token.lexeme]);
+      token = lexer.nextToken();
     }
 
     const expected = [
@@ -179,9 +179,9 @@ describe('Lexer', () => {
       [TokenType.NUMBER_LITERAL, '0.1e2'],
       [TokenType.PLUS, '+'],
       [TokenType.NUMBER_LITERAL, '1.2e+5'],
-    ]
-    expect(items).toEqual(expected)
-  })
+    ];
+    expect(items).toEqual(expected);
+  });
 
   test('string literals', () => {
     const expected = [
@@ -189,32 +189,32 @@ describe('Lexer', () => {
       [TokenType.STRING_LITERAL, '"ba\\"r"'],
       [TokenType.STRING_LITERAL, '"\\x00"'],
       [TokenType.STRING_LITERAL, '"\\u0000"'],
-    ]
-    const input = expected.map((item) => item[1]).join(' ')
-    const items: [TokenType, string][] = []
+    ];
+    const input = expected.map((item) => item[1]).join(' ');
+    const items: [TokenType, string][] = [];
 
-    const lexer = new Lexer(input)
-    let token = lexer.nextToken()
+    const lexer = new Lexer(input);
+    let token = lexer.nextToken();
     while (token.type !== TokenType.EOF) {
-      items.push([token.type, token.lexeme])
-      token = lexer.nextToken()
+      items.push([token.type, token.lexeme]);
+      token = lexer.nextToken();
     }
 
-    expect(items).toEqual(expected)
-  })
+    expect(items).toEqual(expected);
+  });
 
   test('position', () => {
     const input = `\
 let a = 1;
 let b = 2;
-`
-    const items: [TokenType, IPosition, IPosition][] = []
+`;
+    const items: [TokenType, IPosition, IPosition][] = [];
 
-    const lexer = new Lexer(input)
-    let token = lexer.nextToken()
+    const lexer = new Lexer(input);
+    let token = lexer.nextToken();
     while (token.type !== TokenType.EOF) {
-      items.push([token.type, token.start, token.end])
-      token = lexer.nextToken()
+      items.push([token.type, token.start, token.end]);
+      token = lexer.nextToken();
     }
 
     const expected: [TokenType, IPosition, IPosition][] = [
@@ -228,9 +228,9 @@ let b = 2;
       [TokenType.ASSIGN, { line: 2, column: 7 }, { line: 2, column: 8 }],
       [TokenType.NUMBER_LITERAL, { line: 2, column: 9 }, { line: 2, column: 10 }],
       [TokenType.SEMICOLON, { line: 2, column: 10 }, { line: 2, column: 11 }],
-    ]
-    expect(items).toEqual(expected)
-  })
+    ];
+    expect(items).toEqual(expected);
+  });
 
   test('comments', () => {
     const input = `\
@@ -239,14 +239,14 @@ let i = 0; // hhh
 // this is another comment
 // you know what?
 print(i);
-    `
-    const items: Token[] = []
+    `;
+    const items: Token[] = [];
 
-    const lexer = new Lexer(input)
-    let token = lexer.nextToken()
+    const lexer = new Lexer(input);
+    let token = lexer.nextToken();
     while (token.type !== TokenType.EOF) {
-      items.push(token)
-      token = lexer.nextToken()
+      items.push(token);
+      token = lexer.nextToken();
     }
 
     const expected: Token[] = [
@@ -260,19 +260,19 @@ print(i);
       new Token(TokenType.IDENTIFIER, 'i', { line: 5, column: 7 }, { line: 5, column: 8 }),
       new Token(TokenType.R_PAREN, ')', { line: 5, column: 8 }, { line: 5, column: 9 }),
       new Token(TokenType.SEMICOLON, ';', { line: 5, column: 9 }, { line: 5, column: 10 }),
-    ]
-    expect(items).toEqual(expected)
-  })
+    ];
+    expect(items).toEqual(expected);
+  });
 
   describe('error tokens', () => {
     test('string literal across multi lines', () => {
-      const input = '\n"123\n123"'
+      const input = '\n"123\n123"';
 
-      const lexer = new Lexer(input)
-      const token = lexer.nextToken()
+      const lexer = new Lexer(input);
+      const token = lexer.nextToken();
       expect(token).toEqual(
         new Token(TokenType.ILLEGAL, '', { line: 2, column: 1 }, { line: 2, column: 1 })
-      )
-    })
-  })
-})
+      );
+    });
+  });
+});

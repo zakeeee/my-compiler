@@ -1,21 +1,21 @@
-import { Environment } from 'src/interpreter/environment'
-import { PopClass } from '../class'
-import { PopFunction } from '../function'
-import { PopHash } from '../hash'
-import { PopInstance } from '../instance'
-import { NULL } from '../null'
-import { PopNumber } from '../number'
-import { PopObject } from '../object'
-import { PopString } from '../string'
-import { ObjectClass } from './object'
+import { Environment } from 'src/interpreter/environment';
+import { PopClass } from '../class';
+import { PopFunction } from '../function';
+import { PopHash } from '../hash';
+import { PopInstance } from '../instance';
+import { NULL } from '../null';
+import { PopNumber } from '../number';
+import { PopObject } from '../object';
+import { PopString } from '../string';
+import { ObjectClass } from './object';
 
 export type HashInstance = PopInstance & {
-  hash: PopHash
-}
+  hash: PopHash;
+};
 
 export class HashClass extends PopClass {
   constructor(env: Environment, superClass: ObjectClass) {
-    super(env, 'Hash', superClass)
+    super(env, 'Hash', superClass);
 
     this.setMethod(
       'init',
@@ -23,20 +23,20 @@ export class HashClass extends PopClass {
         name: 'init',
         params: ['arg0'],
         func: (env) => {
-          const thisInstance = env.getValue<HashInstance>('this')!
-          const arg0 = env.getValue('arg0')
+          const thisInstance = env.getValue<HashInstance>('this')!;
+          const arg0 = env.getValue('arg0');
           if (arg0 instanceof PopHash) {
-            thisInstance.hash = arg0
-            return NULL
+            thisInstance.hash = arg0;
+            return NULL;
           }
           if (arg0 instanceof PopInstance && arg0.isInstanceOf(this)) {
-            thisInstance.hash = new PopHash((arg0 as HashInstance).hash.getMap())
-            return NULL
+            thisInstance.hash = new PopHash((arg0 as HashInstance).hash.getMap());
+            return NULL;
           }
-          throw new Error('')
+          throw new Error('');
         },
       })
-    )
+    );
 
     this.setMethod(
       'size',
@@ -44,11 +44,11 @@ export class HashClass extends PopClass {
         name: 'size',
         params: [],
         func: (env) => {
-          const thisInstance = env.getValue<HashInstance>('this')!
-          return new PopNumber(thisInstance.hash.size())
+          const thisInstance = env.getValue<HashInstance>('this')!;
+          return new PopNumber(thisInstance.hash.size());
         },
       })
-    )
+    );
 
     this.setMethod(
       'get',
@@ -56,16 +56,16 @@ export class HashClass extends PopClass {
         name: 'get',
         params: ['key'],
         func: (env) => {
-          const thisInstance = env.getValue<HashInstance>('this')!
-          const key = env.getValue('key')
+          const thisInstance = env.getValue<HashInstance>('this')!;
+          const key = env.getValue('key');
           if (!(key instanceof PopString)) {
-            throw new Error('invalid arg type of param "key"')
+            throw new Error('invalid arg type of param "key"');
           }
-          thisInstance.hash.get(key.getValue())
-          return NULL
+          thisInstance.hash.get(key.getValue());
+          return NULL;
         },
       })
-    )
+    );
 
     this.setMethod(
       'set',
@@ -73,20 +73,20 @@ export class HashClass extends PopClass {
         name: 'set',
         params: ['key', 'value'],
         func: (env) => {
-          const thisInstance = env.getValue<HashInstance>('this')!
-          const key = env.getValue('key')
-          const value = env.getValue('value')
+          const thisInstance = env.getValue<HashInstance>('this')!;
+          const key = env.getValue('key');
+          const value = env.getValue('value');
           if (!(key instanceof PopString)) {
-            throw new Error('invalid arg type of param "key"')
+            throw new Error('invalid arg type of param "key"');
           }
           if (!(value instanceof PopObject)) {
-            throw new Error('invalid arg type of param "value"')
+            throw new Error('invalid arg type of param "value"');
           }
-          thisInstance.hash.set(key.getValue(), value)
-          return NULL
+          thisInstance.hash.set(key.getValue(), value);
+          return NULL;
         },
       })
-    )
+    );
 
     this.setMethod(
       'toString',
@@ -94,10 +94,10 @@ export class HashClass extends PopClass {
         name: 'toString',
         params: [],
         func: (env) => {
-          const thisInstance = env.getValue<HashInstance>('this')!
-          return new PopString(thisInstance.hash.toString())
+          const thisInstance = env.getValue<HashInstance>('this')!;
+          return new PopString(thisInstance.hash.toString());
         },
       })
-    )
+    );
   }
 }

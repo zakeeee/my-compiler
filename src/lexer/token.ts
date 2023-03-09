@@ -1,4 +1,4 @@
-import { IPosition } from 'src/types'
+import { IPosition } from 'src/types';
 
 export enum TokenType {
   // special
@@ -141,10 +141,10 @@ const tokenTypeNameMap = Object.freeze({
   [TokenType.R_BRACE]: '}',
   [TokenType.L_BRACKET]: '[',
   [TokenType.R_BRACKET]: ']',
-})
+});
 
 export function getTokenName(tokenType: TokenType): string {
-  return tokenTypeNameMap[tokenType]
+  return tokenTypeNameMap[tokenType];
 }
 
 const keywordTokenTypeMap = Object.freeze({
@@ -165,16 +165,16 @@ const keywordTokenTypeMap = Object.freeze({
   static: TokenType.STATIC,
   new: TokenType.NEW,
   this: TokenType.THIS,
-})
+});
 
 export function isKeyword(word: string): word is keyof typeof keywordTokenTypeMap {
-  return keywordTokenTypeMap.hasOwnProperty(word)
+  return Object.prototype.hasOwnProperty.call(keywordTokenTypeMap, word);
 }
 
 export function getKeywordTokenType<T extends keyof typeof keywordTokenTypeMap>(
   keyword: T
 ): TokenType {
-  return keywordTokenTypeMap[keyword]
+  return keywordTokenTypeMap[keyword];
 }
 
 export class Token {

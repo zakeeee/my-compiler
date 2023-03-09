@@ -1,58 +1,58 @@
-import { PopObject } from './object'
+import { PopObject } from './object';
 
 export class PopArray extends PopObject {
-  protected elements: PopObject[]
+  protected elements: PopObject[];
 
   constructor(arg: number | PopObject[]) {
-    super()
+    super();
     if (typeof arg === 'number') {
-      this.elements = new Array(arg)
+      this.elements = new Array(arg);
     } else {
-      this.elements = arg
+      this.elements = arg;
     }
   }
 
   getElements() {
-    return this.elements
+    return this.elements;
   }
 
   size() {
-    return this.elements.length
+    return this.elements.length;
   }
 
   getAt(i: number) {
     if (i < 0 || i > this.elements.length - 1) {
-      throw new Error('index out of range')
+      throw new Error('index out of range');
     }
-    return this.elements[i]
+    return this.elements[i];
   }
 
   setAt(i: number, value: PopObject) {
     if (i < 0 || i > this.elements.length - 1) {
-      throw new Error('index out of range')
+      throw new Error('index out of range');
     }
-    this.elements[i] = value
+    this.elements[i] = value;
   }
 
   push(value: PopObject) {
-    this.elements.push(value)
+    this.elements.push(value);
   }
 
   pop() {
     if (this.elements.length === 0) {
-      throw new Error('array is empty')
+      throw new Error('array is empty');
     }
-    return this.elements.pop()!
+    return this.elements.pop()!;
   }
 
   slice(start?: number, end?: number) {
-    return new PopArray(this.elements.slice(start, end))
+    return new PopArray(this.elements.slice(start, end));
   }
 
   toString(): string {
     return `[${this.elements
       .slice(0, 10)
       .map((el) => el.toString())
-      .join(', ')}${this.elements.length > 10 ? '...' : ''}]`
+      .join(', ')}${this.elements.length > 10 ? '...' : ''}]`;
   }
 }

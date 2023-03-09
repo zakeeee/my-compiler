@@ -1,52 +1,52 @@
-import type { PopClass } from './class'
-import { PopFunction } from './function'
-import { PopObject } from './object'
+import type { PopClass } from './class';
+import { PopFunction } from './function';
+import { PopObject } from './object';
 
 export class PopInstance extends PopObject {
-  protected cls: PopClass
-  protected fields = new Map<string, PopObject>()
+  protected cls: PopClass;
+  protected fields = new Map<string, PopObject>();
 
   constructor(cls: PopClass) {
-    super()
-    this.cls = cls
+    super();
+    this.cls = cls;
   }
 
   getProperty(name: string): PopObject | null {
-    const prop = this.fields.get(name)
+    const prop = this.fields.get(name);
     if (prop) {
-      return prop
+      return prop;
     }
 
-    const method = this.cls.getMethod(name)
+    const method = this.cls.getMethod(name);
     if (method) {
-      return method.bind(this)
+      return method.bind(this);
     }
 
-    return null
+    return null;
   }
 
   setProperty(name: string, object: PopObject) {
-    this.fields.set(name, object)
+    this.fields.set(name, object);
   }
 
   toString(): string {
-    const toString = this.getProperty('toString')
+    const toString = this.getProperty('toString');
     if (toString instanceof PopFunction) {
-      return toString.call([]).toString()
+      return toString.call([]).toString();
     }
-    return `<Object>`
+    return `<Object>`;
   }
 
   isInstanceOf(cls: PopClass): boolean {
     if (this.cls) {
-      let cur: PopClass | null = cls
+      let cur: PopClass | null = cls;
       while (cur) {
         if (this.cls === cur) {
-          return true
+          return true;
         }
-        cur = cur.getSuperClass()
+        cur = cur.getSuperClass();
       }
     }
-    return false
+    return false;
   }
 }

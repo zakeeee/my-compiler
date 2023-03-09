@@ -9,5 +9,5 @@ export enum ModelType {
 }
 
 export interface Callable {
-  call(args: unknown[]): unknown
+  call(args: unknown[]): unknown;
 }
