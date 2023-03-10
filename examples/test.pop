@@ -1,0 +1,10 @@
+let arr = [1,2,3];
+arr[0] = 2;
+print(isInstance(arr, Array));
+for (let i = 0; i < arr.size(); i += 1) {
+    print(arr);
+}
+
+let h = {"foo": 1, "bar": 2};
+h["foo"] = 2;
+print(h["foo"] == 2);

@@ -12,9 +12,9 @@ import {
   ForStatement,
   FunctionExpression,
   FunctionStatement,
-  GetPropertyExpression,
+  DotExpression,
   HashLiteralExpression,
-  IdentifierExpression,
+  IdExpression,
   IfStatement,
   IndexExpression,
   InfixExpression,
@@ -27,6 +27,7 @@ import {
   Program,
   ReturnStatement,
   Statement,
+  SuperExpression,
   ThisExpression,
   WhileStatement,
 } from 'src/ast';
@@ -149,7 +150,7 @@ export class Parser {
 
   private registerExpressionParseFunctions() {
     // prefix
-    this.prefixParseFuncs.set(TokenType.IDENTIFIER, this.parseIdentifierExpression);
+    this.prefixParseFuncs.set(TokenType.IDENTIFIER, this.parseIdExpression);
     this.prefixParseFuncs.set(TokenType.LET, this.parseLetExpression);
     this.prefixParseFuncs.set(TokenType.L_PAREN, this.parseGroupedExpression);
     this.prefixParseFuncs.set(TokenType.FUNC, this.parseFunctionExpression);
@@ -157,6 +158,7 @@ export class Parser {
     this.prefixParseFuncs.set(TokenType.L_BRACE, this.parseHashExpression);
     this.prefixParseFuncs.set(TokenType.NEW, this.parseNewExpression);
     this.prefixParseFuncs.set(TokenType.THIS, this.parseThisExpression);
+    this.prefixParseFuncs.set(TokenType.SUPER, this.parseSuperExpression);
 
     this.prefixParseFuncs.set(TokenType.NULL, this.parseLiteralExpression);
     this.prefixParseFuncs.set(TokenType.TRUE, this.parseLiteralExpression);
@@ -197,9 +199,9 @@ export class Parser {
     this.infixParseFuncs.set(TokenType.BIT_OR_EQUAL, this.parseAssignmentExpression);
     this.infixParseFuncs.set(TokenType.BIT_XOR_EQUAL, this.parseAssignmentExpression);
 
-    this.infixParseFuncs.set(TokenType.DOT, this.parseGetPropertyExpression);
-    this.infixParseFuncs.set(TokenType.L_PAREN, this.parseCallExpression);
+    this.infixParseFuncs.set(TokenType.DOT, this.parseDotExpression);
     this.infixParseFuncs.set(TokenType.L_BRACKET, this.parseIndexExpression);
+    this.infixParseFuncs.set(TokenType.L_PAREN, this.parseCallExpression);
   }
 
   private parseProgram = (): Program => {
@@ -479,10 +481,10 @@ export class Parser {
     return leftExpr;
   };
 
-  private parseIdentifierExpression = (): IdentifierExpression => {
+  private parseIdExpression = (): IdExpression => {
     const token = copyToken(this.curToken);
     const name = this.parseIdentifier();
-    return new IdentifierExpression(token, name);
+    return new IdExpression(token, name);
   };
 
   private parseFunctionExpression = (): FunctionExpression => {
@@ -557,8 +559,8 @@ export class Parser {
     const token = copyToken(this.curToken);
     if (
       !(
-        left instanceof IdentifierExpression ||
-        left instanceof GetPropertyExpression ||
+        left instanceof IdExpression ||
+        left instanceof DotExpression ||
         left instanceof IndexExpression
       )
     ) {
@@ -695,13 +697,13 @@ export class Parser {
     return new IndexExpression(token, indexable, index);
   };
 
-  private parseGetPropertyExpression = (left: Expression): GetPropertyExpression => {
+  private parseDotExpression = (left: Expression): DotExpression => {
     const token = copyToken(this.curToken);
 
     this.advance();
     const right = this.parseIdentifier();
 
-    return new GetPropertyExpression(token, left, right);
+    return new DotExpression(token, left, right);
   };
 
   private parseNewExpression = (): NewExpression => {
@@ -736,6 +738,22 @@ export class Parser {
     }
     const token = copyToken(this.curToken);
     return new ThisExpression(token);
+  };
+
+  private parseSuperExpression = (): SuperExpression => {
+    if (this.curToken.type !== TokenType.SUPER) {
+      throw syntaxError(
+        `expect token "${getTokenName(TokenType.SUPER)}", got "${getTokenName(
+          this.curToken.type
+        )}"`,
+        this.peekToken
+      );
+    }
+    const token = copyToken(this.curToken);
+    this.expectPeek(TokenType.DOT);
+    this.expectPeek(TokenType.IDENTIFIER);
+    const prop = copyToken(this.curToken);
+    return new SuperExpression(token, prop);
   };
 
   private advance = () => {

@@ -12,9 +12,9 @@ import {
   ForStatement,
   FunctionExpression,
   FunctionStatement,
-  GetPropertyExpression,
+  DotExpression,
   HashLiteralExpression,
-  IdentifierExpression,
+  IdExpression,
   IfStatement,
   IndexExpression,
   InfixExpression,
@@ -26,6 +26,7 @@ import {
   PrefixExpression,
   Program,
   ReturnStatement,
+  SuperExpression,
   ThisExpression,
   TreeNodeVisitor,
   WhileStatement,
@@ -152,6 +153,7 @@ export class Resolver implements TreeNodeVisitor {
   visitMethodStatement(node: MethodStatement) {
     this.declare(node.name);
     this.define(node.name);
+
     this.beginScope();
     const prevLoopType = this.loopType;
     this.loopType = LoopType.NONE;
@@ -170,6 +172,12 @@ export class Resolver implements TreeNodeVisitor {
   visitClassStatement(node: ClassStatement) {
     this.declare(node.name);
     this.define(node.name);
+
+    if (node.superClass) {
+      this.beginScope();
+      this.scopes.at(-1)?.set('super', true);
+    }
+
     this.beginScope();
     const prevLoopType = this.loopType;
     this.loopType = LoopType.NONE;
@@ -181,6 +189,10 @@ export class Resolver implements TreeNodeVisitor {
     this.loopType = prevLoopType;
     this.classType = prevClassType;
     this.endScope();
+
+    if (node.superClass) {
+      this.endScope();
+    }
   }
 
   visitPrefixExpression(node: PrefixExpression) {
@@ -201,8 +213,8 @@ export class Resolver implements TreeNodeVisitor {
     for (const decl of node.varDecls) {
       this.declare(decl.name);
       if (decl.initializer) {
-        this.define(decl.name);
         decl.initializer.accept(this);
+        this.define(decl.name);
       }
     }
   }
@@ -218,8 +230,8 @@ export class Resolver implements TreeNodeVisitor {
     // noop
   }
 
-  visitIdentifierExpression(node: IdentifierExpression) {
-    if (this.scopes.length && this.scopes[this.scopes.length - 1].get(node.name.lexeme) === false) {
+  visitIdExpression(node: IdExpression) {
+    if (this.scopes.length && this.scopes.at(-1)!.get(node.name.lexeme) === false) {
       throw new Error(`"${node.name.lexeme}" is not defined`);
     }
     this.resolveLocal(node, node.name);
@@ -253,7 +265,7 @@ export class Resolver implements TreeNodeVisitor {
     }
   }
 
-  visitGetPropertyExpression(node: GetPropertyExpression) {
+  visitDotExpression(node: DotExpression) {
     node.object.accept(this);
   }
 
@@ -267,6 +279,13 @@ export class Resolver implements TreeNodeVisitor {
     if (this.classType !== ClassType.CLASS) {
       throw new Error('cannot use this outside of class');
     }
+  }
+
+  visitSuperExpression(node: SuperExpression) {
+    if (this.classType !== ClassType.CLASS) {
+      throw new Error('cannot use super outside of class');
+    }
+    this.resolveLocal(node, node.token);
   }
 
   visitIndexExpression(node: IndexExpression) {
@@ -287,9 +306,9 @@ export class Resolver implements TreeNodeVisitor {
       return;
     }
 
-    const curScope = this.scopes[this.scopes.length - 1];
+    const curScope = this.scopes.at(-1)!;
     if (curScope.has(name.lexeme)) {
-      throw new Error(`name "${name.lexeme}" is already declared`);
+      throw new Error(`"${name.lexeme}" is already declared in current scope`);
     }
     curScope.set(name.lexeme, false);
   }
@@ -299,7 +318,7 @@ export class Resolver implements TreeNodeVisitor {
       return;
     }
 
-    const curScope = this.scopes[this.scopes.length - 1];
+    const curScope = this.scopes.at(-1)!;
     curScope.set(name.lexeme, true);
   }
 

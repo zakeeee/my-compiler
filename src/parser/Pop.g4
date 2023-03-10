@@ -28,25 +28,25 @@ expressionStatement: expression ';';
 
 letStatement: letExpression ';';
 
-ifStatement: IF '(' expression ')' statement (ELSE statement)?;
+ifStatement: 'if' '(' expression ')' statement ('else' statement)?;
 
-forStatement: FOR '(' expression? ';' expression? ';' expression? ')' statement;
+forStatement: 'for' '(' expression? ';' expression? ';' expression? ')' statement;
 
-whileStatement: WHILE '(' expression ')' statement;
+whileStatement: 'while' '(' expression ')' statement;
 
-continueStatement: CONTINUE ';';
+continueStatement: 'continue' ';';
 
-breakStatement: BREAK ';';
+breakStatement: 'break' ';';
 
-returnStatement: RETURN expression? ';';
+returnStatement: 'return' expression? ';';
 
-functionStatement: FUNC Identifier '(' parameterSequence? ')' blockStatement;
+functionStatement: 'func' Identifier '(' parameterSequence? ')' blockStatement;
 
-classStatement: CLASS Identifier (EXTENDS Identifier)? '{' methodStatement* '}';
+classStatement: 'class' Identifier ('extends' Identifier)? '{' methodStatement* '}';
 
 parameterSequence: Identifier (',' Identifier)*;
 
-methodStatement: STATIC? Identifier '(' parameterSequence? ')' blockStatement;
+methodStatement: 'static'? Identifier '(' parameterSequence? ')' blockStatement;
 
 expressionSequence: expression (',' expression)*;
 
@@ -58,14 +58,15 @@ expression
   | functionExpression     # FunctionExpression
   | callExpression         # CallExpression
   | literalExpression      # LiteralExpression
-  | identifierExpression   # IdentifierExpression
+  | idExpression           # IdExpression
   | groupedExpression      # GroupedExpression
   | arrayLiteralExpression # ArrayLiteralExpression
   | hashLiteralExpression  # HashLiteralExpression
   | indexExpression        # IndexExpression
-  | getPropertyExpression  # GetPropertyExpression
+  | dotExpression          # DotExpression
   | thisExpression         # ThisExpression
   | newExpression          # NewExpression
+  | superExpression        # SuperExpression
   ;
 
 prefixExpression: '+' expression | '-' expression | '~' expression | '!' expression;
@@ -83,7 +84,7 @@ infixExpression
   ;
 
 assignmentExpression
-  : (identifierExpression | getPropertyExpression | indexExpression) (
+  : (idExpression | dotExpression | indexExpression) (
     '='
     | '*='
     | '/='
@@ -98,9 +99,9 @@ assignmentExpression
 
 variableDeclaration: Identifier ('=' expression)?;
 
-letExpression: LET variableDeclaration (',' variableDeclaration)*;
+letExpression: 'let' variableDeclaration (',' variableDeclaration)*;
 
-functionExpression: FUNC '(' parameterSequence? ')' blockStatement;
+functionExpression: 'func' '(' parameterSequence? ')' blockStatement;
 
 arguments: expressionSequence?;
 
@@ -108,67 +109,52 @@ callExpression: expression '(' arguments ')';
 
 literalExpression: NullLiteral | BooleanLiteral | StringLiteral | DecimalLiteral;
 
-identifierExpression: Identifier;
+idExpression: Identifier;
 
 groupedExpression: '(' expression ')';
 
 arrayLiteralExpression: '[' expressionSequence? ']';
 
-indexExpression: expression '[' expression ']';
-
 keyValue: StringLiteral ':' expression;
 
 hashLiteralExpression: '{' (keyValue (',' keyValue)*)? '}';
 
-getPropertyExpression: expression '.' Identifier;
+dotExpression: expression '.' Identifier;
 
-newExpression: NEW Identifier '(' arguments ')';
+indexExpression: expression '[' expression ']';
 
-thisExpression: THIS;
+newExpression: 'new' Identifier '(' arguments ')';
+
+thisExpression: 'this';
+
+superExpression: 'super' '.' Identifier;
 
 keywords
-  : LET
-  | TRUE
-  | FALSE
-  | NULL
-  | FUNC
-  | IF
-  | ELSE
-  | FOR
-  | WHILE
-  | BREAK
-  | CONTINUE
-  | RETURN
-  | CLASS
-  | EXTENDS
-  | STATIC
-  | NEW
-  | THIS
+  : 'let'
+  | 'true'
+  | 'false'
+  | 'null'
+  | 'func'
+  | 'if'
+  | 'else'
+  | 'for'
+  | 'while'
+  | 'break'
+  | 'continue'
+  | 'return'
+  | 'class'
+  | 'extends'
+  | 'static'
+  | 'new'
+  | 'this'
+  | 'super'
   ;
-
-LET: 'let';
-TRUE: 'true';
-FALSE: 'false';
-NULL: 'null';
-FUNC: 'func';
-IF: 'if';
-ELSE: 'else';
-FOR: 'for';
-WHILE: 'while';
-BREAK: 'break';
-CONTINUE: 'continue';
-RETURN: 'return';
-CLASS: 'class';
-EXTENDS: 'extends';
-STATIC: 'static';
-NEW: 'new';
-THIS: 'this';
 
 Identifier: [A-Za-z][A-Za-z0-9]*;
 
-NullLiteral: NULL;
+NullLiteral: 'null';
 
-BooleanLiteral: TRUE | FALSE;
+BooleanLiteral: 'true' | 'false';
 
 StringLiteral: '"' StringCharacter* '"';
 

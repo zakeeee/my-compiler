@@ -15,8 +15,7 @@ class A {
 
 class B extends A {
   foo() {
-    let a = "B";
-    print("this is " + a);
+    super.foo();
   }
 }
 

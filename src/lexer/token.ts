@@ -27,7 +27,8 @@ export enum TokenType {
   EXTENDS, // extends
   STATIC, // static
   NEW, // new
-  THIS,
+  THIS, // this
+  SUPER, // super
 
   // operators and punctuations
   ASSIGN, // =
@@ -99,6 +100,7 @@ const tokenTypeNameMap = Object.freeze({
   [TokenType.STATIC]: 'static',
   [TokenType.NEW]: 'new',
   [TokenType.THIS]: 'this',
+  [TokenType.SUPER]: 'super',
 
   // operators and punctuations
   [TokenType.ASSIGN]: '=',
@@ -165,6 +167,7 @@ const keywordTokenTypeMap = Object.freeze({
   static: TokenType.STATIC,
   new: TokenType.NEW,
   this: TokenType.THIS,
+  super: TokenType.SUPER,
 });
 
 export function isKeyword(word: string): word is keyof typeof keywordTokenTypeMap {

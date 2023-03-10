@@ -3,6 +3,7 @@ import { Token } from 'src/lexer';
 export interface TreeNodeVisitor {
   visitProgram(node: Program): any;
 
+  //#region statements
   visitBlockStatement(node: BlockStatement): any;
 
   visitEmptyStatement(node: EmptyStatement): any;
@@ -28,7 +29,9 @@ export interface TreeNodeVisitor {
   visitMethodStatement(node: MethodStatement): any;
 
   visitClassStatement(node: ClassStatement): any;
+  //#endregion
 
+  //#region expressions
   visitPrefixExpression(node: PrefixExpression): any;
 
   visitInfixExpression(node: InfixExpression): any;
@@ -41,7 +44,7 @@ export interface TreeNodeVisitor {
 
   visitLiteralExpression(node: LiteralExpression): any;
 
-  visitIdentifierExpression(node: IdentifierExpression): any;
+  visitIdExpression(node: IdExpression): any;
 
   visitFunctionExpression(node: FunctionExpression): any;
 
@@ -49,13 +52,16 @@ export interface TreeNodeVisitor {
 
   visitHashLiteralExpression(node: HashLiteralExpression): any;
 
-  visitGetPropertyExpression(node: GetPropertyExpression): any;
+  visitDotExpression(node: DotExpression): any;
+
+  visitIndexExpression(node: IndexExpression): any;
 
   visitNewExpression(node: NewExpression): any;
 
   visitThisExpression(node: ThisExpression): any;
 
-  visitIndexExpression(node: IndexExpression): any;
+  visitSuperExpression(node: SuperExpression): any;
+  //#endregion
 }
 
 export interface TreeNode<V extends keyof TreeNodeVisitor> {
@@ -219,17 +225,18 @@ export class ClassStatement implements TreeNode<'visitClassStatement'> {
 export type Expression =
   | PrefixExpression
   | InfixExpression
-  | AssignmentExpression
   | LetExpression
+  | AssignmentExpression
+  | FunctionExpression
   | CallExpression
   | LiteralExpression
-  | IdentifierExpression
-  | FunctionExpression
   | ArrayLiteralExpression
   | HashLiteralExpression
-  | GetPropertyExpression
+  | IdExpression
+  | DotExpression
   | NewExpression
-  | ThisExpression;
+  | ThisExpression
+  | SuperExpression;
 
 export class PrefixExpression implements TreeNode<'visitPrefixExpression'> {
   constructor(public token: Token, public operator: Token, public operand: Expression) {}
@@ -256,7 +263,7 @@ export class AssignmentExpression implements TreeNode<'visitAssignmentExpression
   constructor(
     public token: Token,
     public operator: Token,
-    public left: IdentifierExpression | GetPropertyExpression | IndexExpression,
+    public left: IdExpression | DotExpression | IndexExpression,
     public right: Expression
   ) {}
 
@@ -292,22 +299,6 @@ export class LiteralExpression implements TreeNode<'visitLiteralExpression'> {
   }
 }
 
-export class IdentifierExpression implements TreeNode<'visitIdentifierExpression'> {
-  constructor(public token: Token, public name: Token) {}
-
-  accept<T extends TreeNodeVisitor>(visitor: T): ReturnType<T['visitIdentifierExpression']> {
-    return visitor.visitIdentifierExpression(this);
-  }
-}
-
-export class FunctionExpression implements TreeNode<'visitFunctionExpression'> {
-  constructor(public token: Token, public params: Token[], public body: BlockStatement) {}
-
-  accept<T extends TreeNodeVisitor>(visitor: T): ReturnType<T['visitFunctionExpression']> {
-    return visitor.visitFunctionExpression(this);
-  }
-}
-
 export class ArrayLiteralExpression implements TreeNode<'visitArrayLiteralExpression'> {
   constructor(public token: Token, public elements: Expression[]) {}
 
@@ -324,11 +315,35 @@ export class HashLiteralExpression implements TreeNode<'visitHashLiteralExpressi
   }
 }
 
-export class GetPropertyExpression implements TreeNode<'visitGetPropertyExpression'> {
+export class IdExpression implements TreeNode<'visitIdExpression'> {
+  constructor(public token: Token, public name: Token) {}
+
+  accept<T extends TreeNodeVisitor>(visitor: T): ReturnType<T['visitIdExpression']> {
+    return visitor.visitIdExpression(this);
+  }
+}
+
+export class FunctionExpression implements TreeNode<'visitFunctionExpression'> {
+  constructor(public token: Token, public params: Token[], public body: BlockStatement) {}
+
+  accept<T extends TreeNodeVisitor>(visitor: T): ReturnType<T['visitFunctionExpression']> {
+    return visitor.visitFunctionExpression(this);
+  }
+}
+
+export class IndexExpression implements TreeNode<'visitIndexExpression'> {
+  constructor(public token: Token, public indexable: Expression, public index: Expression) {}
+
+  accept<T extends TreeNodeVisitor>(visitor: T): ReturnType<T['visitIndexExpression']> {
+    return visitor.visitIndexExpression(this);
+  }
+}
+
+export class DotExpression implements TreeNode<'visitDotExpression'> {
   constructor(public token: Token, public object: Expression, public prop: Token) {}
 
-  accept<T extends TreeNodeVisitor>(visitor: T): ReturnType<T['visitGetPropertyExpression']> {
-    return visitor.visitGetPropertyExpression(this);
+  accept<T extends TreeNodeVisitor>(visitor: T): ReturnType<T['visitDotExpression']> {
+    return visitor.visitDotExpression(this);
   }
 }
 
@@ -348,10 +363,10 @@ export class ThisExpression implements TreeNode<'visitThisExpression'> {
   }
 }
 
-export class IndexExpression implements TreeNode<'visitIndexExpression'> {
-  constructor(public token: Token, public indexable: Expression, public index: Expression) {}
+export class SuperExpression implements TreeNode<'visitSuperExpression'> {
+  constructor(public token: Token, public prop: Token) {}
 
-  accept<T extends TreeNodeVisitor>(visitor: T): ReturnType<T['visitIndexExpression']> {
-    return visitor.visitIndexExpression(this);
+  accept<T extends TreeNodeVisitor>(visitor: T): ReturnType<T['visitSuperExpression']> {
+    return visitor.visitSuperExpression(this);
   }
 }

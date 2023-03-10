@@ -12,9 +12,9 @@ import {
   ForStatement,
   FunctionExpression,
   FunctionStatement,
-  GetPropertyExpression,
+  DotExpression,
   HashLiteralExpression,
-  IdentifierExpression,
+  IdExpression,
   IfStatement,
   IndexExpression,
   InfixExpression,
@@ -26,6 +26,7 @@ import {
   PrefixExpression,
   Program,
   ReturnStatement,
+  SuperExpression,
   ThisExpression,
   TreeNodeVisitor,
   WhileStatement,
@@ -461,13 +462,21 @@ export class Interpreter implements TreeNodeVisitor {
   visitClassStatement(node: ClassStatement): PopObject {
     const className = node.name.lexeme;
     let superClass: PopClass | null = null;
-    if (node.superClass?.lexeme) {
+    if (node.superClass) {
       const cls = this.globals.getValue(node.superClass.lexeme);
       if (cls instanceof PopClass) {
         superClass = cls;
+      } else {
+        throw new Error('super class must be a class');
       }
     }
     this.curEnv.define(className, null);
+    let prevEnv: Environment | null = null;
+    if (node.superClass) {
+      prevEnv = this.curEnv;
+      this.curEnv = new Environment(prevEnv);
+      this.curEnv.define('super', superClass);
+    }
     const cls = new PopClass(this.curEnv, className, superClass);
     for (const method of node.methods) {
       const methodName = method.name.lexeme;
@@ -497,6 +506,9 @@ export class Interpreter implements TreeNodeVisitor {
         cls.setMethod(methodName, func);
       }
     }
+    if (prevEnv) {
+      this.curEnv = prevEnv;
+    }
     this.curEnv.assign(className, cls);
     return NULL;
   }
@@ -519,13 +531,13 @@ export class Interpreter implements TreeNodeVisitor {
     const tokenType = node.operator.type;
 
     if (tokenType === TokenType.ASSIGN) {
-      if (node.left instanceof IdentifierExpression) {
+      if (node.left instanceof IdExpression) {
         const name = node.left.name.lexeme;
         const res = this.curEnv.assign(name, right);
         if (!res) {
           throw new Error(`cannot assign to undefined name "${name}"`);
         }
-      } else if (node.left instanceof GetPropertyExpression) {
+      } else if (node.left instanceof DotExpression) {
         const object = node.left.object.accept(this);
         const prop = node.left.prop.lexeme;
         if (!(object instanceof PopInstance)) {
@@ -570,7 +582,7 @@ export class Interpreter implements TreeNodeVisitor {
 
     // *=, /=, %=, +=, -=, &=, |=, ^=
     let value: PopObject;
-    if (node.left instanceof IdentifierExpression) {
+    if (node.left instanceof IdExpression) {
       const name = node.left.name.lexeme;
       const left = this.curEnv.getValue(name);
       if (!(left instanceof PopObject)) {
@@ -578,7 +590,7 @@ export class Interpreter implements TreeNodeVisitor {
       }
       value = performInfixOperation(tokenType, left, right);
       this.curEnv.assign(name, value);
-    } else if (node.left instanceof GetPropertyExpression) {
+    } else if (node.left instanceof DotExpression) {
       const object = node.left.object.accept(this);
       const prop = node.left.prop.lexeme;
       if (!(object instanceof PopInstance)) {
@@ -670,7 +682,7 @@ export class Interpreter implements TreeNodeVisitor {
     throw new Error(`unknown literal expression of type ${getTokenName(tokenType)}`);
   }
 
-  visitIdentifierExpression(node: IdentifierExpression): PopObject {
+  visitIdExpression(node: IdExpression): PopObject {
     const val = this.lookUpIdentifier(node.name, node);
     if (!val) {
       throw new Error(`"${node.name.lexeme}" is undefined`);
@@ -725,7 +737,7 @@ export class Interpreter implements TreeNodeVisitor {
     return instance;
   }
 
-  visitGetPropertyExpression(node: GetPropertyExpression): PopObject {
+  visitDotExpression(node: DotExpression): PopObject {
     const object = node.object.accept(this);
     const propName = node.prop.lexeme;
     if (!(object instanceof PopInstance)) {
@@ -736,24 +748,6 @@ export class Interpreter implements TreeNodeVisitor {
       throw new Error(`unknown property "${propName}"`);
     }
     return val;
-  }
-
-  visitNewExpression(node: NewExpression): PopObject {
-    const className = node.cls.lexeme;
-    const cls = this.curEnv.getValue(className);
-    if (!(cls instanceof PopClass)) {
-      throw new Error(`cannot find class "${className}"`);
-    }
-    const args = node.args.map((arg) => arg.accept(this));
-    return cls.call(args);
-  }
-
-  visitThisExpression(node: ThisExpression): PopObject {
-    const instance = this.curEnv.getValue('this');
-    if (!(instance instanceof PopObject)) {
-      throw new Error('"this" is undefined');
-    }
-    return instance;
   }
 
   visitIndexExpression(node: IndexExpression): PopObject {
@@ -786,6 +780,41 @@ export class Interpreter implements TreeNodeVisitor {
     } else {
       throw new Error('');
     }
+  }
+
+  visitNewExpression(node: NewExpression): PopObject {
+    const className = node.cls.lexeme;
+    const cls = this.curEnv.getValue(className);
+    if (!(cls instanceof PopClass)) {
+      throw new Error(`cannot find class "${className}"`);
+    }
+    const args = node.args.map((arg) => arg.accept(this));
+    return cls.call(args);
+  }
+
+  visitThisExpression(node: ThisExpression): PopObject {
+    const instance = this.curEnv.getValue('this');
+    if (!(instance instanceof PopInstance)) {
+      throw new Error('"this" is undefined');
+    }
+    return instance;
+  }
+
+  visitSuperExpression(node: SuperExpression): PopObject {
+    const distance = this.locals.get(node)!;
+    const superClass = this.curEnv.ancestor(distance)!.getValue<PopClass>('super');
+    if (!superClass) {
+      throw new Error('');
+    }
+    const method = superClass.getMethod(node.prop.lexeme);
+    if (!method) {
+      throw new Error('');
+    }
+    const instance = this.curEnv.getValue('this');
+    if (!(instance instanceof PopInstance)) {
+      throw new Error('"this" is undefined');
+    }
+    return method.bind(instance);
   }
 
   private lookUpIdentifier(name: Token, expr: Expression): PopObject | null {

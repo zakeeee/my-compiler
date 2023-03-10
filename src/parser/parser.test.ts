@@ -6,12 +6,14 @@ import { Parser } from './parser';
 describe('Parser', () => {
   test('let statement', () => {
     const input = `\
-a = b = c;
+super.foo;
+super.foo.bar();
+super.foo[0];
 `;
     const lexer = new Lexer(input);
     const parser = new Parser(lexer);
     const prog = parser.parse();
-    // console.log(inspect(prog, false, null));
+    console.log(inspect(prog, false, null));
   });
 
   test('func declaration statement', () => {
